@@ -15,6 +15,16 @@ describe('shared public API barrel', () => {
       'status',
     ]);
   });
+  it('re-exports the device-mode and status constants', () => {
+    expect([...shared.DEVICE_MODES]).toEqual(['TMO', 'DMO', 'REP', 'GAT']);
+    expect([...shared.STATUS_OPTIONS]).toEqual([
+      'Einsatzbereit',
+      'Defekt',
+      'Ausgeliehen',
+      'Wartung',
+      'Sonstiges',
+    ]);
+  });
   it('re-exports the zod schemas', () => {
     expect(shared.deviceCreateSchema.safeParse({ issi: '1' }).success).toBe(true);
     expect(shared.devicePatchSchema.safeParse({}).success).toBe(true);

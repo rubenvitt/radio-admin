@@ -1,3 +1,6 @@
+export { DEVICE_MODES, STATUS_OPTIONS } from './constants';
+export type { DeviceMode, StatusOption } from './constants';
+
 export type { Role } from './role';
 export { mapGroupsToRole } from './role';
 
