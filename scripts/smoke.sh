@@ -13,8 +13,13 @@ docker run -d --name "$NAME" \
   -e DEV_USER_NAME="Smoke User" \
   -e SESSION_SECRET=smoke-secret-not-for-prod-0123456789 \
   -e DATABASE_PATH=/data/data.sqlite \
+  -e NODE_ENV=development \
   -p 3000:3000 \
   "$IMAGE"
+
+# NODE_ENV=development above overrides the image's NODE_ENV=production for this
+# throwaway smoke container only: the config refuses to boot the dev auth bypass
+# in production, and the smoke check exercises the bypass on purpose.
 
 echo "[smoke] waiting for server..."
 for i in $(seq 1 30); do
