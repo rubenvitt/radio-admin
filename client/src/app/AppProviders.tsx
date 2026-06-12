@@ -1,5 +1,6 @@
 import { QueryClientProvider, type QueryClient } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
+import { ThemeProvider } from '../theme/ThemeProvider';
 import { createQueryClient } from './queryClient';
 
 // One default singleton QueryClient created at module scope; tests may inject a
@@ -15,8 +16,7 @@ export function AppProviders({
 }) {
   return (
     <QueryClientProvider client={client ?? defaultClient}>
-      {/* ThemeProvider added in 5.4 */}
-      {children}
+      <ThemeProvider>{children}</ThemeProvider>
     </QueryClientProvider>
   );
 }
