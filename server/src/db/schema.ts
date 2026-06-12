@@ -23,6 +23,9 @@ export const devices = sqliteTable('devices', {
   bedieneinheit: text('bedieneinheit'),
   deviceModes: text('device_modes'),
   alamosIntegrated: integer('alamos_integrated', { mode: 'boolean' }),
+  // Whether the device is available for loan; surfaced as a boolean via
+  // { mode: 'boolean' }. MASTER DATA — never in UPDATER_EDITABLE_FIELDS.
+  loanable: integer('loanable', { mode: 'boolean' }),
   createdAt: integer('created_at').notNull(),
   updatedAt: integer('updated_at').notNull(),
   createdBy: text('created_by'),
@@ -34,6 +37,19 @@ export const softwareVersions = sqliteTable('software_versions', {
   value: text('value').notNull().unique(),
   createdAt: integer('created_at').notNull(),
   createdBy: text('created_by'),
+});
+
+export const apiTokens = sqliteTable('api_tokens', {
+  id: text('id').primaryKey().$defaultFn(newId),
+  name: text('name').notNull(),
+  // sha256 hex of the plaintext secret; the plaintext is never stored.
+  tokenHash: text('token_hash').notNull(),
+  // First ~11 chars of the secret, kept for display in the admin list.
+  prefix: text('prefix').notNull(),
+  createdAt: integer('created_at').notNull(),
+  createdBy: text('created_by'),
+  lastUsedAt: integer('last_used_at'),
+  revokedAt: integer('revoked_at'),
 });
 
 export const deviceEvents = sqliteTable(

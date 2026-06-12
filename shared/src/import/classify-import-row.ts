@@ -74,6 +74,7 @@ function emptyDevice(issi: string): DeviceRecord {
     bedieneinheit: null,
     deviceModes: null,
     alamosIntegrated: null,
+    loanable: null,
     createdAt: 0,
     updatedAt: 0,
     createdBy: null,

@@ -73,13 +73,45 @@ describe('rowToIncoming: new field normalization', () => {
     expect(make('0')).toBe(false);
   });
 
-  it('lastUpdatedAt: numeric cell parses, blank/non-numeric -> null (not NaN)', () => {
+  it('lastUpdatedAt: numeric ms cell parses, blank/garbage -> null (not NaN)', () => {
     const mapping: ColumnMapping = { issi: 0, lastUpdatedAt: 1 };
     expect(rowToIncoming(['1', '1700000000000'], mapping).lastUpdatedAt).toBe(1_700_000_000_000);
     expect(rowToIncoming(['1', ''], mapping).lastUpdatedAt).toBeNull();
-    // A human date like "15.01.2024" is not a finite number -> null, never NaN.
-    expect(rowToIncoming(['1', '15.01.2024'], mapping).lastUpdatedAt).toBeNull();
+    expect(rowToIncoming(['1', '   '], mapping).lastUpdatedAt).toBeNull();
     expect(rowToIncoming(['1', 'n/a'], mapping).lastUpdatedAt).toBeNull();
+    // Never NaN: a value out of every accepted shape is null.
+    expect(rowToIncoming(['1', '15/01/2024'], mapping).lastUpdatedAt).toBeNull();
+  });
+
+  it('lastUpdatedAt: ISO YYYY-MM-DD -> UTC-midnight ms', () => {
+    const mapping: ColumnMapping = { issi: 0, lastUpdatedAt: 1 };
+    expect(rowToIncoming(['1', '2024-01-15'], mapping).lastUpdatedAt).toBe(Date.UTC(2024, 0, 15));
+    expect(rowToIncoming(['1', '2020-12-31'], mapping).lastUpdatedAt).toBe(Date.UTC(2020, 11, 31));
+    // Invalid calendar date -> null, not a rolled-over ms.
+    expect(rowToIncoming(['1', '2024-13-40'], mapping).lastUpdatedAt).toBeNull();
+  });
+
+  it('lastUpdatedAt: German DD.MM.YYYY -> UTC-midnight ms', () => {
+    const mapping: ColumnMapping = { issi: 0, lastUpdatedAt: 1 };
+    expect(rowToIncoming(['1', '15.01.2024'], mapping).lastUpdatedAt).toBe(Date.UTC(2024, 0, 15));
+    expect(rowToIncoming(['1', '1.2.2020'], mapping).lastUpdatedAt).toBe(Date.UTC(2020, 1, 1));
+    expect(rowToIncoming(['1', '31.12.2020'], mapping).lastUpdatedAt).toBe(Date.UTC(2020, 11, 31));
+    // ISO and German forms of the same day produce the SAME ms (round-trip safe).
+    expect(rowToIncoming(['1', '15.01.2024'], mapping).lastUpdatedAt).toBe(
+      rowToIncoming(['1', '2024-01-15'], mapping).lastUpdatedAt,
+    );
+    expect(rowToIncoming(['1', '32.13.2024'], mapping).lastUpdatedAt).toBeNull();
+  });
+
+  it('loanable: truthy tokens -> true, blank -> null, anything else -> false', () => {
+    const mapping: ColumnMapping = { issi: 0, loanable: 1 };
+    for (const t of ['x', 'X', 'ja', 'yes', 'true', '✓', '  x  ']) {
+      expect(rowToIncoming(['1', t], mapping).loanable).toBe(true);
+    }
+    expect(rowToIncoming(['1', ''], mapping).loanable).toBeNull();
+    expect(rowToIncoming(['1', '   '], mapping).loanable).toBeNull();
+    expect(rowToIncoming(['1', 'nein'], mapping).loanable).toBe(false);
+    expect(rowToIncoming(['1', '0'], mapping).loanable).toBe(false);
   });
 
   it('other new text fields pass through trimmed, empty -> null', () => {

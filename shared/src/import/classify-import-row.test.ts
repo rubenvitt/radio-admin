@@ -21,6 +21,7 @@ const existing: DeviceRecord = {
   bedieneinheit: null,
   deviceModes: null,
   alamosIntegrated: null,
+  loanable: null,
   createdAt: 1690000000000,
   updatedAt: 1690000000000,
   createdBy: 'seed',

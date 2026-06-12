@@ -1,3 +1,14 @@
+CREATE TABLE `api_tokens` (
+	`id` text PRIMARY KEY NOT NULL,
+	`name` text NOT NULL,
+	`token_hash` text NOT NULL,
+	`prefix` text NOT NULL,
+	`created_at` integer NOT NULL,
+	`created_by` text,
+	`last_used_at` integer,
+	`revoked_at` integer
+);
+--> statement-breakpoint
 CREATE TABLE `device_events` (
 	`id` text PRIMARY KEY NOT NULL,
 	`device_id` text NOT NULL,
@@ -30,6 +41,7 @@ CREATE TABLE `devices` (
 	`bedieneinheit` text,
 	`device_modes` text,
 	`alamos_integrated` integer,
+	`loanable` integer,
 	`created_at` integer NOT NULL,
 	`updated_at` integer NOT NULL,
 	`created_by` text,

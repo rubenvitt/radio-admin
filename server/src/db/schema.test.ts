@@ -29,6 +29,7 @@ describe('schema: devices', () => {
         'bedieneinheit',
         'deviceModes',
         'alamosIntegrated',
+        'loanable',
         'createdAt',
         'updatedAt',
         'createdBy',

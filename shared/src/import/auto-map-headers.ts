@@ -17,6 +17,7 @@ export const IMPORTABLE_FIELDS = [
   'bedieneinheit',
   'deviceModes',
   'alamosIntegrated',
+  'loanable',
 ] as const;
 
 export type ImportableField = (typeof IMPORTABLE_FIELDS)[number];
@@ -62,6 +63,9 @@ const SYNONYMS: Record<string, ImportableField> = {
   alamos: 'alamosIntegrated',
   alamosintegriert: 'alamosIntegrated',
   alamosintegration: 'alamosIntegrated',
+  ausleihbar: 'loanable',
+  ausleihe: 'loanable',
+  leihbar: 'loanable',
   zuordnung: 'assignedTo',
   zugeordnet: 'assignedTo',
   zustaendig: 'assignedTo',

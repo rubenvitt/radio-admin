@@ -30,6 +30,7 @@ export function createDevice(db: Db, input: DeviceCreate, userId: string | null)
     bedieneinheit: input.bedieneinheit ?? null,
     deviceModes: input.deviceModes ?? null,
     alamosIntegrated: input.alamosIntegrated ?? null,
+    loanable: input.loanable ?? null,
     createdAt: now,
     updatedAt: now,
     createdBy: userId,
@@ -41,6 +42,24 @@ export function createDevice(db: Db, input: DeviceCreate, userId: string | null)
 
 export function getDeviceById(db: Db, id: string): DeviceRecord | undefined {
   return db.select().from(devices).where(eq(devices.id, id)).get();
+}
+
+/**
+ * All devices flagged loanable (`loanable = true`), newest-first. Backs the
+ * public loan API; callers project to a PUBLIC field subset before returning.
+ */
+export function listLoanableDevices(db: Db): DeviceRecord[] {
+  return db
+    .select()
+    .from(devices)
+    .where(eq(devices.loanable, true))
+    .orderBy(desc(devices.createdAt))
+    .all();
+}
+
+/** All devices, newest-first. Backs the full CSV export. */
+export function listAllDevices(db: Db): DeviceRecord[] {
+  return db.select().from(devices).orderBy(desc(devices.createdAt)).all();
 }
 
 export function deleteDevice(db: Db, id: string): boolean {

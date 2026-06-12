@@ -14,11 +14,57 @@ export type ImportSummary = Record<ImportRowClass, number>;
 // The committed importCommitSchema maps device field -> column index.
 export type ColumnMapping = ImportCommit['mapping'];
 
-// Number-typed device fields the CSV may target.
-const NUMERIC_FIELDS = new Set<string>(['lastUpdatedAt']);
+// Trimmed/lowercased cell values that mark a boolean checkbox (Alamos /
+// Ausleihbar) as true. Shared by both boolean fields so the truthy rule is identical.
+const BOOL_TRUTHY = new Set<string>(['x', 'ja', 'yes', 'y', '1', 'true', 'wahr', '✓']);
 
-// Trimmed/lowercased cell values that mark an Alamos-integriert checkbox as true.
-const ALAMOS_TRUTHY = new Set<string>(['x', 'ja', 'yes', 'y', '1', 'true', 'wahr', '✓']);
+/**
+ * Normalizes a boolean checkbox cell: empty/whitespace -> null; a recognized
+ * truthy token (case-insensitive) -> true; anything else (e.g. "nein", "0") -> false.
+ */
+function normalizeBoolean(cell: string): boolean | null {
+  const v = cell.trim().toLowerCase();
+  if (v === '') return null;
+  return BOOL_TRUTHY.has(v);
+}
+
+/**
+ * Normalizes a `lastUpdatedAt` cell to unix-ms (UTC) or null — never NaN:
+ * - a numeric ms string (e.g. "1700000000000") -> Number
+ * - ISO `YYYY-MM-DD` -> UTC-midnight ms
+ * - German `DD.MM.YYYY` -> UTC-midnight ms
+ * - empty / anything else -> null
+ * ISO and the numeric branch are UTC; this mirrors the export's
+ * `toISOString().slice(0,10)` so an exported date re-imports to the same ms.
+ */
+function normalizeLastUpdatedAt(cell: string): number | null {
+  const v = cell.trim();
+  if (v === '') return null;
+  // Pure numeric ms string.
+  if (/^-?\d+$/.test(v)) {
+    const n = Number(v);
+    return Number.isFinite(n) ? n : null;
+  }
+  // ISO YYYY-MM-DD (Date.parse of a date-only string is UTC).
+  const iso = /^(\d{4})-(\d{2})-(\d{2})$/.exec(v);
+  if (iso) return isoToUtcMs(Number(iso[1]), Number(iso[2]), Number(iso[3]));
+  // German DD.MM.YYYY.
+  const de = /^(\d{1,2})\.(\d{1,2})\.(\d{4})$/.exec(v);
+  if (de) return isoToUtcMs(Number(de[3]), Number(de[2]), Number(de[1]));
+  return null;
+}
+
+/** Build a UTC-midnight unix-ms from y/m/d, or null if the calendar date is invalid. */
+function isoToUtcMs(year: number, month: number, day: number): number | null {
+  const ms = Date.UTC(year, month - 1, day);
+  if (!Number.isFinite(ms)) return null;
+  // Reject overflow (e.g. month 13, day 32 rolling over) so garbage -> null.
+  const d = new Date(ms);
+  if (d.getUTCFullYear() !== year || d.getUTCMonth() !== month - 1 || d.getUTCDate() !== day) {
+    return null;
+  }
+  return ms;
+}
 
 /**
  * Normalizes a Gerätefunktionen cell into a canonical comma-joined subset of
@@ -36,16 +82,6 @@ function normalizeDeviceModes(cell: string): string | null {
   return ordered.length === 0 ? null : ordered.join(',');
 }
 
-/**
- * Normalizes an Alamos cell: empty/whitespace -> null; a recognized truthy token
- * (case-insensitive) -> true; anything else (e.g. "nein", "0") -> false.
- */
-function normalizeAlamos(cell: string): boolean | null {
-  const v = cell.trim().toLowerCase();
-  if (v === '') return null;
-  return ALAMOS_TRUTHY.has(v);
-}
-
 /** Turns one raw string row into a typed { issi, ...patch } via the column mapping. */
 export function rowToIncoming(
   row: string[],
@@ -60,13 +96,12 @@ export function rowToIncoming(
       out.issi = value;
     } else if (field === 'deviceModes') {
       out.deviceModes = normalizeDeviceModes(typeof raw === 'string' ? raw : '');
-    } else if (field === 'alamosIntegrated') {
-      out.alamosIntegrated = normalizeAlamos(typeof raw === 'string' ? raw : '');
-    } else if (NUMERIC_FIELDS.has(field)) {
-      // Guard against un-parseable cells (e.g. "15.01.2024" -> NaN): a non-finite
-      // result becomes null so we never persist/log "NaN" for lastUpdatedAt.
-      const n = Number(value);
-      out[field] = value === '' ? null : Number.isFinite(n) ? n : null;
+    } else if (field === 'alamosIntegrated' || field === 'loanable') {
+      out[field] = normalizeBoolean(typeof raw === 'string' ? raw : '');
+    } else if (field === 'lastUpdatedAt') {
+      // Accept ms / ISO YYYY-MM-DD / German DD.MM.YYYY; anything else -> null
+      // (never NaN). The ISO form is what the CSV export emits (round-trip).
+      out.lastUpdatedAt = normalizeLastUpdatedAt(value);
     } else {
       out[field] = value === '' ? null : value;
     }

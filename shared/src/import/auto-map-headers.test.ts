@@ -91,4 +91,11 @@ describe('autoMapHeaders', () => {
     expect(autoMapHeaders(['Alamos integriert'])['Alamos integriert']).toBe('alamosIntegrated');
     expect(autoMapHeaders(['Geraet'])['Geraet']).toBe('deviceType');
   });
+
+  it('maps loanable synonyms (Ausleihbar / Ausleihe / Leihbar)', () => {
+    for (const h of ['Ausleihbar', 'Ausleihe', 'Leihbar', 'ausleihbar']) {
+      expect(autoMapHeaders([h])[h]).toBe('loanable');
+    }
+    expect(IMPORTABLE_FIELDS).toContain('loanable');
+  });
 });

@@ -22,6 +22,7 @@ function makeDevice(overrides: Partial<DeviceRecord> = {}): DeviceRecord {
     bedieneinheit: null,
     deviceModes: null,
     alamosIntegrated: null,
+    loanable: null,
     createdAt: 1,
     updatedAt: 1,
     createdBy: null,

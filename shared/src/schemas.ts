@@ -35,6 +35,7 @@ export const deviceRecordSchema = z.object({
   // Canonical comma-joined subset of DEVICE_MODES, e.g. "TMO,DMO" (plain string).
   deviceModes: z.string().nullable(),
   alamosIntegrated: z.boolean().nullable(),
+  loanable: z.boolean().nullable(),
   createdAt: z.number().int(),
   updatedAt: z.number().int(),
   createdBy: z.string().nullable(),
@@ -62,6 +63,7 @@ export const deviceCreateSchema = z
     bedieneinheit: z.string().nullable().optional(),
     deviceModes: z.string().nullable().optional(),
     alamosIntegrated: z.boolean().nullable().optional(),
+    loanable: z.boolean().nullable().optional(),
   })
   .strip();
 
@@ -85,6 +87,7 @@ export const devicePatchSchema = z
     bedieneinheit: z.string().nullable().optional(),
     deviceModes: z.string().nullable().optional(),
     alamosIntegrated: z.boolean().nullable().optional(),
+    loanable: z.boolean().nullable().optional(),
   })
   .strip();
 
@@ -109,6 +112,7 @@ export const importCommitSchema = z.object({
       bedieneinheit: z.number().int().optional(),
       deviceModes: z.number().int().optional(),
       alamosIntegrated: z.number().int().optional(),
+      loanable: z.number().int().optional(),
     })
     .strip(),
   rows: z.array(z.array(z.string())),
