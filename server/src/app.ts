@@ -11,6 +11,7 @@ import { softwareVersionRoutes } from './routes/softwareVersions';
 import { importRoutes } from './routes/import';
 import { tokenRoutes } from './routes/tokens';
 import { loanApiRoutes } from './routes/loanApi';
+import { exportRoutes } from './routes/export';
 import { mountStatic } from './static';
 
 // Augment Hono context with the request-scoped database handle, so later phases
@@ -51,6 +52,10 @@ export function buildApp(cfg: AppConfig, db: Db): Hono {
   // All remaining /api routes require an authenticated session.
   app.use('/api/*', requireAuth(cfg));
 
+  // Admin-only full CSV export (round-trips with the importer). Registered
+  // BEFORE deviceRoutes so the static `/devices/export` path is matched ahead of
+  // the dynamic `/devices/:id` route (which would otherwise 404 on "export").
+  app.route('/api', exportRoutes(db));
   app.route('/api', deviceRoutes(db));
   app.route('/api', suggestionRoutes(db));
   app.route('/api', softwareVersionRoutes(db));
