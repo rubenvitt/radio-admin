@@ -1,4 +1,11 @@
-// Placeholder — the real Dashboard is built in Phase 5B (Task 5.15).
+import { Typography } from 'antd';
+import { Dashboard } from '../features/dashboard/Dashboard';
+
 export function DashboardPage() {
-  return <div>Dashboard</div>;
+  return (
+    <>
+      <Typography.Title level={3}>Dashboard</Typography.Title>
+      <Dashboard />
+    </>
+  );
 }
