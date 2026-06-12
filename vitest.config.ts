@@ -16,7 +16,7 @@ export default defineConfig({
           name: 'server',
           root: './server',
           environment: 'node',
-          include: ['src/**/*.test.ts', '*.test.ts'],
+          include: ['src/**/*.test.ts', '*.test.ts', 'test/**/*.test.ts'],
         },
       },
     ],
