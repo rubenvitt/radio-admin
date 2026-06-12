@@ -16,6 +16,7 @@ import {
   getDeviceById,
   createDevice,
   updateDevice,
+  deleteDevice,
   writeEvents,
 } from '../repos/deviceRepo';
 import {
@@ -96,6 +97,12 @@ export function deviceRoutes(db: Db) {
 
     const ref = getReferenceVersion(db);
     return c.json({ ...updated, updateStatus: computeUpdateStatus(updated, ref) });
+  });
+
+  r.delete('/devices/:id', requireRole('admin'), (c) => {
+    const ok = deleteDevice(db, c.req.param('id'));
+    if (!ok) return c.json({ error: 'not_found' }, 404);
+    return c.body(null, 204);
   });
 
   return r;
