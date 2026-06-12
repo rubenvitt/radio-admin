@@ -1,8 +1,17 @@
 import { Hono } from 'hono';
-import { computeUpdateStatus, type UpdateStatus } from '@ra/shared';
+import {
+  computeUpdateStatus,
+  deviceCreateSchema,
+  type UpdateStatus,
+  type FieldDiff,
+} from '@ra/shared';
+import { requireRole } from '../auth/middleware';
 import type { Db } from '../repos/deviceRepo';
-import { listDevices, getDeviceById } from '../repos/deviceRepo';
-import { getReferenceVersion } from '../repos/softwareVersionRepo';
+import { listDevices, getDeviceById, createDevice, writeEvents } from '../repos/deviceRepo';
+import {
+  getReferenceVersion,
+  insertSoftwareVersionIfNew,
+} from '../repos/softwareVersionRepo';
 
 export function deviceRoutes(db: Db) {
   const r = new Hono();
@@ -27,6 +36,26 @@ export function deviceRoutes(db: Db) {
     const ref = getReferenceVersion(db);
     const updateStatus = computeUpdateStatus(device, ref);
     return c.json({ ...device, updateStatus });
+  });
+
+  r.post('/devices', requireRole('admin'), async (c) => {
+    const json = await c.req.json().catch(() => null);
+    const parsed = deviceCreateSchema.safeParse(json);
+    if (!parsed.success) return c.json({ error: 'invalid', issues: parsed.error.issues }, 400);
+    const user = c.get('user');
+
+    if (parsed.data.softwareVersion) {
+      insertSoftwareVersionIfNew(db, parsed.data.softwareVersion, user.sub);
+    }
+    const device = createDevice(db, parsed.data, user.sub);
+
+    // One 'create' event per non-null submitted field (oldValue null).
+    const diffs: FieldDiff[] = Object.entries(parsed.data)
+      .filter(([, v]) => v !== null && v !== undefined)
+      .map(([field, v]) => ({ field, oldValue: null, newValue: String(v) }));
+    writeEvents(db, device.id, diffs, user.sub, 'create');
+
+    return c.json(device, 201);
   });
 
   return r;

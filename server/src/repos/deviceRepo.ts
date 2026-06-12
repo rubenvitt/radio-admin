@@ -2,9 +2,9 @@ import { and, asc, count, desc, eq, like, or, sql, type SQL } from 'drizzle-orm'
 import type { SQLiteColumn } from 'drizzle-orm/sqlite-core';
 import type { DbHandle } from '../db/index';
 import { newId } from '../db/id';
-import { devices } from '../db/schema';
+import { devices, deviceEvents } from '../db/schema';
 import { getReferenceVersion } from './softwareVersionRepo';
-import type { DeviceRecord, DeviceCreate, UpdateStatus } from '@ra/shared';
+import type { DeviceRecord, DeviceCreate, UpdateStatus, FieldDiff } from '@ra/shared';
 
 /** The drizzle database type shared by production (`getDb().db`) and tests (`makeTestDb().db`). */
 export type Db = DbHandle['db'];
@@ -121,4 +121,42 @@ export function listDevices(db: Db, params: ListParams): ListResult {
     .map((r) => ({ ...r.d, updateStatus: r.updateStatus }));
 
   return { rows, total, page, pageSize };
+}
+
+export type EventSource = 'manual' | 'csv-import' | 'create';
+
+/** Append one device_events row per diff. No-op for an empty diff list. */
+export function writeEvents(
+  db: Db,
+  deviceId: string,
+  diffs: FieldDiff[],
+  changedBy: string | null,
+  source: EventSource,
+): void {
+  if (diffs.length === 0) return;
+  const changedAt = Date.now();
+  db.insert(deviceEvents)
+    .values(
+      diffs.map((d) => ({
+        id: newId(),
+        deviceId,
+        field: d.field,
+        oldValue: d.oldValue,
+        newValue: d.newValue,
+        changedBy,
+        changedAt,
+        source,
+      })),
+    )
+    .run();
+}
+
+/** Change history for a device, newest-first. */
+export function getDeviceEvents(db: Db, deviceId: string) {
+  return db
+    .select()
+    .from(deviceEvents)
+    .where(eq(deviceEvents.deviceId, deviceId))
+    .orderBy(desc(deviceEvents.changedAt))
+    .all();
 }
