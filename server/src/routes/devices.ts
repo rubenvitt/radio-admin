@@ -18,6 +18,7 @@ import {
   updateDevice,
   deleteDevice,
   writeEvents,
+  getDeviceEvents,
 } from '../repos/deviceRepo';
 import {
   getReferenceVersion,
@@ -39,6 +40,12 @@ export function deviceRoutes(db: Db) {
       pageSize: qp.pageSize ? Number(qp.pageSize) : undefined,
     });
     return c.json(result);
+  });
+
+  r.get('/devices/:id/events', (c) => {
+    const id = c.req.param('id');
+    if (!getDeviceById(db, id)) return c.json({ error: 'not_found' }, 404);
+    return c.json(getDeviceEvents(db, id));
   });
 
   r.get('/devices/:id', (c) => {
