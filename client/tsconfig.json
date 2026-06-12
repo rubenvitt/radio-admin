@@ -1,0 +1,16 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "moduleResolution": "Bundler",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "noEmit": true,
+    "declaration": false,
+    "sourceMap": false,
+    "types": ["vitest/globals", "@testing-library/jest-dom"],
+    "paths": {
+      "@ra/shared": ["../shared/src/index.ts"]
+    }
+  },
+  "include": ["src"]
+}

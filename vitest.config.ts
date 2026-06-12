@@ -19,6 +19,9 @@ export default defineConfig({
           include: ['src/**/*.test.ts', '*.test.ts', 'test/**/*.test.ts'],
         },
       },
+      // The client project loads its own vite.config.ts so it gets the React
+      // plugin + jsdom setup. A root `vitest run` then also executes client tests.
+      './client',
     ],
   },
 });
