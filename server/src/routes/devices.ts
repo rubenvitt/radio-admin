@@ -25,19 +25,29 @@ import {
   insertSoftwareVersionIfNew,
 } from '../repos/softwareVersionRepo';
 
+/** Parse a query param to a positive integer, or undefined (-> caller default). */
+function safePositiveInt(raw: string | undefined): number | undefined {
+  const n = Number.parseInt(raw ?? '', 10);
+  return Number.isFinite(n) && n > 0 ? n : undefined;
+}
+
 export function deviceRoutes(db: Db) {
   const r = new Hono();
 
   r.get('/devices', (c) => {
     const qp = c.req.query();
+    // Guard against NaN/garbage query params: parse defensively and only forward a
+    // positive finite integer; listDevices clamps the upper bound (pageSize <= 200).
+    const page = safePositiveInt(qp.page);
+    const pageSize = safePositiveInt(qp.pageSize);
     const result = listDevices(db, {
       q: qp.q,
       status: qp.status,
       location: qp.location,
       updateStatus: qp.updateStatus as UpdateStatus | undefined,
       sort: qp.sort,
-      page: qp.page ? Number(qp.page) : undefined,
-      pageSize: qp.pageSize ? Number(qp.pageSize) : undefined,
+      page,
+      pageSize,
     });
     return c.json(result);
   });
@@ -62,16 +72,21 @@ export function deviceRoutes(db: Db) {
     if (!parsed.success) return c.json({ error: 'invalid', issues: parsed.error.issues }, 400);
     const user = c.get('user');
 
-    if (parsed.data.softwareVersion) {
-      insertSoftwareVersionIfNew(db, parsed.data.softwareVersion, user.sub);
-    }
-    const device = createDevice(db, parsed.data, user.sub);
-
     // One 'create' event per non-null submitted field (oldValue null).
     const diffs: FieldDiff[] = Object.entries(parsed.data)
       .filter(([, v]) => v !== null && v !== undefined)
       .map(([field, v]) => ({ field, oldValue: null, newValue: String(v) }));
-    writeEvents(db, device.id, diffs, user.sub, 'create');
+
+    // Atomic: software-version registration + device insert + events succeed or
+    // roll back together (e.g. a duplicate-ISSI throw rolls back the whole write).
+    const device = db.transaction(() => {
+      if (parsed.data.softwareVersion) {
+        insertSoftwareVersionIfNew(db, parsed.data.softwareVersion, user.sub);
+      }
+      const created = createDevice(db, parsed.data, user.sub);
+      writeEvents(db, created.id, diffs, user.sub, 'create');
+      return created;
+    });
 
     return c.json(device, 201);
   });
@@ -96,11 +111,16 @@ export function deviceRoutes(db: Db) {
       return c.json({ ...existing, updateStatus: computeUpdateStatus(existing, ref0) });
     }
 
-    if (allowed.softwareVersion) {
-      insertSoftwareVersionIfNew(db, allowed.softwareVersion, user.sub);
-    }
-    const updated = updateDevice(db, id, allowed, user.sub)!;
-    writeEvents(db, id, diffs, user.sub, 'manual');
+    // Atomic: software-version registration + device update + events succeed or
+    // roll back together (e.g. changing issi to an existing one rolls back).
+    const updated = db.transaction(() => {
+      if (allowed.softwareVersion) {
+        insertSoftwareVersionIfNew(db, allowed.softwareVersion, user.sub);
+      }
+      const u = updateDevice(db, id, allowed, user.sub)!;
+      writeEvents(db, id, diffs, user.sub, 'manual');
+      return u;
+    });
 
     const ref = getReferenceVersion(db);
     return c.json({ ...updated, updateStatus: computeUpdateStatus(updated, ref) });

@@ -37,5 +37,16 @@ export function buildApp(cfg: AppConfig, db: Db): Hono {
   app.route('/api', softwareVersionRoutes(db));
   app.route('/api', importRoutes(db));
 
+  // Global error handler: map a better-sqlite3 UNIQUE-constraint violation (only
+  // reachable via the unique `devices.issi` column — software_versions inserts use
+  // onConflictDoNothing) to a structured 409; everything else is an opaque 500.
+  app.onError((err, c) => {
+    const code = (err as { code?: string }).code;
+    if (code === 'SQLITE_CONSTRAINT_UNIQUE') {
+      return c.json({ error: 'issi_conflict' }, 409);
+    }
+    return c.json({ error: 'internal' }, 500);
+  });
+
   return app;
 }
