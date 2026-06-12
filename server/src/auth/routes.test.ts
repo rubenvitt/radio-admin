@@ -5,7 +5,7 @@ import { createAuthRoutes } from './routes';
 import { createFakeAuthService } from './fake-auth-service';
 import type { AppConfig } from '../config';
 
-const secret = 'super-secret-value-at-least-16';
+const secret = 'super-secret-value-at-least-32-chars';
 function cfg(over: Partial<AppConfig> = {}): AppConfig {
   return {
     DATABASE_PATH: '/tmp/x.sqlite',

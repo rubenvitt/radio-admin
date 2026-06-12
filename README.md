@@ -54,7 +54,7 @@ All configuration is via environment variables (see `.env.example`):
 | Variable             | Purpose                                                         |
 | -------------------- | --------------------------------------------------------------- |
 | `DATABASE_PATH`      | SQLite file path (Docker: `/data/data.sqlite`, on the volume).  |
-| `SESSION_SECRET`     | Cookie-signing secret, ≥16 chars (required unless dev bypass).  |
+| `SESSION_SECRET`     | Cookie-signing secret, ≥32 chars (required unless dev bypass).  |
 | `OIDC_ISSUER`        | OIDC provider issuer URL (required unless dev bypass).          |
 | `OIDC_CLIENT_ID`     | OIDC client id (required unless dev bypass).                    |
 | `OIDC_CLIENT_SECRET` | OIDC client secret (required unless dev bypass).                |

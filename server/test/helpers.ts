@@ -6,7 +6,7 @@ import type { Db } from '../src/repos/deviceRepo';
 import type { Role } from '@ra/shared';
 
 /** A fixed secret shared by the test config and `authCookie` so signed cookies verify. */
-export const TEST_SECRET = 'test-session-secret-0123456789';
+export const TEST_SECRET = 'test-session-secret-0123456789-abcd';
 
 /**
  * A valid `AppConfig` for tests: the same secret that `authCookie` signs with,

@@ -11,7 +11,7 @@ docker run -d --name "$NAME" \
   -e AUTH_DEV_BYPASS=true \
   -e DEV_USER_ROLE=admin \
   -e DEV_USER_NAME="Smoke User" \
-  -e SESSION_SECRET=smoke-secret-not-for-prod \
+  -e SESSION_SECRET=smoke-secret-not-for-prod-0123456789 \
   -e DATABASE_PATH=/data/data.sqlite \
   -p 3000:3000 \
   "$IMAGE"

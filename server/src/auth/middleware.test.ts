@@ -5,7 +5,7 @@ import { SESSION_COOKIE } from './oauth-tx';
 import { requireAuth, requireRole, warnIfDevBypass } from './middleware';
 import type { AppConfig } from '../config';
 
-const secret = 'super-secret-value-at-least-16';
+const secret = 'super-secret-value-at-least-32-chars';
 
 function baseConfig(over: Partial<AppConfig> = {}): AppConfig {
   return {

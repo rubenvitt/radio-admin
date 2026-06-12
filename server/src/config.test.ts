@@ -3,7 +3,7 @@ import { loadConfig } from './config';
 
 const base = {
   DATABASE_PATH: '/tmp/test.sqlite',
-  SESSION_SECRET: 'super-secret-value-at-least-16',
+  SESSION_SECRET: 'super-secret-value-at-least-32-chars',
   OIDC_ISSUER: 'https://id.example.org',
   OIDC_CLIENT_ID: 'client-1',
   OIDC_CLIENT_SECRET: 'secret-1',
@@ -46,16 +46,16 @@ describe('loadConfig', () => {
       const cfg = loadConfig({ AUTH_DEV_BYPASS: 'true' });
       expect(cfg.AUTH_DEV_BYPASS).toBe(true);
       // a dev session secret is supplied so the session signer still works
-      expect(cfg.SESSION_SECRET.length).toBeGreaterThanOrEqual(16);
+      expect(cfg.SESSION_SECRET.length).toBeGreaterThanOrEqual(32);
       expect(cfg.DATABASE_PATH).toBe('./data/data.sqlite');
     });
 
     it('still honours a provided SESSION_SECRET under dev bypass', () => {
       const cfg = loadConfig({
         AUTH_DEV_BYPASS: 'true',
-        SESSION_SECRET: 'an-explicit-dev-secret-value',
+        SESSION_SECRET: 'an-explicit-dev-secret-value-32chars',
       });
-      expect(cfg.SESSION_SECRET).toBe('an-explicit-dev-secret-value');
+      expect(cfg.SESSION_SECRET).toBe('an-explicit-dev-secret-value-32chars');
     });
 
     it('still rejects a too-short SESSION_SECRET even under dev bypass', () => {
@@ -67,6 +67,18 @@ describe('loadConfig', () => {
     it('still requires OIDC_* when AUTH_DEV_BYPASS is false', () => {
       const without = { ...base, OIDC_ISSUER: undefined };
       expect(() => loadConfig({ ...without, AUTH_DEV_BYPASS: 'false' })).toThrow(/OIDC_ISSUER/);
+    });
+
+    it('refuses to boot when AUTH_DEV_BYPASS=true and NODE_ENV=production', () => {
+      expect(() =>
+        loadConfig({ AUTH_DEV_BYPASS: 'true', NODE_ENV: 'production' }),
+      ).toThrow(/AUTH_DEV_BYPASS/);
+    });
+
+    it('allows the dev bypass outside production', () => {
+      expect(loadConfig({ AUTH_DEV_BYPASS: 'true', NODE_ENV: 'development' }).AUTH_DEV_BYPASS).toBe(
+        true,
+      );
     });
   });
 });

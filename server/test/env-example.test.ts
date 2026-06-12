@@ -31,6 +31,6 @@ describe('.env.example', () => {
     expect(content).toMatch(/^AUTH_DEV_BYPASS=false\s*$/m);
   });
   it('does not contain a real secret', () => {
-    expect(content).not.toMatch(/SESSION_SECRET=.{16,}/);
+    expect(content).not.toMatch(/SESSION_SECRET=.{32,}/);
   });
 });
