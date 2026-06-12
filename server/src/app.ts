@@ -10,6 +10,7 @@ import { suggestionRoutes } from './routes/suggestions';
 import { softwareVersionRoutes } from './routes/softwareVersions';
 import { importRoutes } from './routes/import';
 import { tokenRoutes } from './routes/tokens';
+import { loanApiRoutes } from './routes/loanApi';
 import { mountStatic } from './static';
 
 // Augment Hono context with the request-scoped database handle, so later phases
@@ -41,6 +42,11 @@ export function buildApp(cfg: AppConfig, db: Db): Hono {
   // requires OIDC config and is only constructed for the real flow).
   const auth = cfg.AUTH_DEV_BYPASS ? createFakeAuthService() : createAuthService(cfg);
   app.route('/', createAuthRoutes(cfg, auth));
+
+  // Public, API-token-authed loan endpoint. Registered BEFORE the session guard
+  // so service callers (no browser session) can reach it; it enforces its own
+  // Bearer/X-API-Key token check via verifyApiToken.
+  app.route('/api', loanApiRoutes(db));
 
   // All remaining /api routes require an authenticated session.
   app.use('/api/*', requireAuth(cfg));
