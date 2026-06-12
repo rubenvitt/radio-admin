@@ -6,6 +6,7 @@ describe('shared public API barrel', () => {
     expect(typeof shared.mapGroupsToRole).toBe('function');
     expect(typeof shared.computeUpdateStatus).toBe('function');
     expect(typeof shared.filterEditableFields).toBe('function');
+    expect(typeof shared.diffDevice).toBe('function');
   });
   it('re-exports the allowlist constant', () => {
     expect([...shared.UPDATER_EDITABLE_FIELDS]).toEqual([

@@ -6,6 +6,8 @@ export { computeUpdateStatus } from './update-status';
 
 export { UPDATER_EDITABLE_FIELDS, filterEditableFields } from './editable-fields';
 
+export { diffDevice } from './diff-device';
+
 export {
   suggestionFieldEnum,
   deviceRecordSchema,
