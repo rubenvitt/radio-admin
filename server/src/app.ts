@@ -6,6 +6,7 @@ import { deviceRoutes } from './routes/devices';
 import { suggestionRoutes } from './routes/suggestions';
 import { softwareVersionRoutes } from './routes/softwareVersions';
 import { importRoutes } from './routes/import';
+import { mountStatic } from './static';
 
 // Augment Hono context with the request-scoped database handle, so later phases
 // (e.g. the CSV import routes) can read `c.get('db')` instead of closing over it.
@@ -36,6 +37,14 @@ export function buildApp(cfg: AppConfig, db: Db): Hono {
   app.route('/api', suggestionRoutes(db));
   app.route('/api', softwareVersionRoutes(db));
   app.route('/api', importRoutes(db));
+
+  // Serve the built SPA + static assets AFTER all /api routes are registered, so
+  // the catch-all fallback can never shadow an API endpoint. Disabled when
+  // SERVE_CLIENT=false (the test harness sets this so unit tests stay API-only).
+  if (process.env.SERVE_CLIENT !== 'false') {
+    const staticDir = process.env.STATIC_DIR ?? './client/dist';
+    mountStatic(app, staticDir);
+  }
 
   // Global error handler: map a better-sqlite3 UNIQUE-constraint violation (only
   // reachable via the unique `devices.issi` column — software_versions inserts use
