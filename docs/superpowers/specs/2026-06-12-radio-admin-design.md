@@ -84,13 +84,20 @@ Zod-Schemas, die der Client zur Typisierung nutzt).
 | `rufname` | text | | Rufname, Combobox |
 | `issi` | text | **unique, not null** | TETRA ISSI – Match-Key für CSV |
 | `serialNumber` | text | nullable | Seriennummer / Inventar-Nr. |
-| `deviceType` | text | nullable | Gerätetyp/Modell, Combobox |
-| `status` | text | nullable | Zustand (einsatzbereit / in Reparatur / ausgemustert / verloren), Combobox |
-| `location` | text | nullable | Standort, Combobox |
+| `deviceType` | text | nullable | **„Gerät"** = Gerätetyp/Modell, Combobox |
+| `status` | text | nullable | Zustand – **festes Auswahlfeld** `STATUS_OPTIONS` (Einsatzbereit / Defekt / Ausgeliehen / Wartung / Sonstiges) |
+| `location` | text | nullable | **Lagerort**, Combobox |
 | `assignedTo` | text | nullable | Zuständige Person/Gruppe, Combobox |
 | `softwareVersion` | text | nullable | **„Letztes Update"** = aufgespielter Softwarestand. Verweist auf `software_versions.value` |
 | `lastUpdatedAt` | integer (unix ms) | nullable | **„Zuletzt aktualisiert"** = Datum des Updates (Fachdatum, vom Nutzer/Import gesetzt) |
-| `notes` | text | nullable | Freitext |
+| `notes` | text | nullable | **Bemerkung** (Freitext) |
+| `hiorgId` | text | nullable | **Hiorg-ID** (im UI als Link dargestellt) |
+| `opta` | text | nullable | OPTA (operativ-taktische Adresse), Combobox |
+| `funktion` | text | nullable | Funktion, Combobox |
+| `hersteller` | text | nullable | Hersteller, Combobox |
+| `bedieneinheit` | text | nullable | Bedieneinheit, Combobox |
+| `deviceModes` | text | nullable | Gerätefunktionen – Mehrfachauswahl `DEVICE_MODES` (TMO/DMO/REP/GAT), kanonisch kommagetrennt z.B. `"TMO,DMO"` |
+| `alamosIntegrated` | integer (bool) | nullable | **Alamos integriert** (Checkbox) |
 | `createdAt` | integer | not null | System-Zeitstempel |
 | `updatedAt` | integer | not null | System-Zeitstempel |
 | `createdBy` | text | nullable | User-`sub`/Name |
