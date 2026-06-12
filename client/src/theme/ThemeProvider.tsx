@@ -53,10 +53,34 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         theme={{
           algorithm:
             mode === 'dark' ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,
+          token: { colorPrimary: '#1677ff', borderRadius: 8 },
+          components: {
+            // High-contrast selected item in the dark Sider menu (white on the
+            // primary blue) instead of the low-contrast default.
+            Menu: {
+              darkItemSelectedBg: '#1677ff',
+              darkItemSelectedColor: '#ffffff',
+              itemSelectedBg: '#e6f0ff',
+              itemSelectedColor: '#1677ff',
+            },
+          },
         }}
       >
+        <BodyBackground />
         {children}
       </ConfigProvider>
     </ThemeContext.Provider>
   );
+}
+
+/**
+ * Paints the document body with the theme's layout background so the area outside
+ * the app (overscroll, any gaps) matches light/dark instead of staying white.
+ */
+function BodyBackground() {
+  const { token } = antdTheme.useToken();
+  useEffect(() => {
+    document.body.style.background = token.colorBgLayout;
+  }, [token.colorBgLayout]);
+  return null;
 }

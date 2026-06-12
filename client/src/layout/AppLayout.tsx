@@ -51,6 +51,7 @@ export function AppLayout() {
   const menu = (
     <Menu
       mode="inline"
+      theme={mode === 'dark' ? 'dark' : 'light'}
       selectedKeys={[location.pathname]}
       items={navItems.map((item) => ({
         key: item.key,

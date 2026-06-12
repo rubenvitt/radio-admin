@@ -2,10 +2,10 @@ import { useQuery } from '@tanstack/react-query';
 import { apiFetch } from '../api/client';
 
 export interface SoftwareVersionItem {
-  id: string;
   value: string;
   createdAt: number;
-  isLatest: boolean;
+  /** True for the current reference version (newest version assigned to a device). */
+  reference: boolean;
 }
 
 export function useSoftwareVersions() {

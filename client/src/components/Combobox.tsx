@@ -38,12 +38,15 @@ export function Combobox({
   const [searchValue, setSearchValue] = useState('');
 
   const selectOptions = useMemo<Option[]>(() => {
-    const base: Option[] = options.map((opt) => ({ label: opt, value: opt }));
+    // Defensive: tolerate a non-array `options` (e.g. a loading/error state or an
+    // unexpected API shape) instead of crashing the whole form.
+    const safeOptions = Array.isArray(options) ? options : [];
+    const base: Option[] = safeOptions.map((opt) => ({ label: opt, value: opt }));
     const trimmed = searchValue.trim();
     if (
       allowCreate &&
       trimmed.length > 0 &&
-      !options.some((opt) => opt.toLowerCase() === trimmed.toLowerCase())
+      !safeOptions.some((opt) => opt.toLowerCase() === trimmed.toLowerCase())
     ) {
       return [{ label: `Anlegen: ${trimmed}`, value: trimmed }, ...base];
     }

@@ -10,9 +10,10 @@ function wrapper({ children }: { children: ReactNode }) {
   return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
 }
 
-test('fetches suggestions for a field', async () => {
+test('fetches suggestions and unwraps the server { values } envelope', async () => {
+  // The server responds with `{ values: string[] }`, not a bare array.
   const spy = vi.spyOn(global, 'fetch').mockResolvedValue(
-    new Response(JSON.stringify(['Kdow', 'MTW']), {
+    new Response(JSON.stringify({ values: ['Kdow', 'MTW'] }), {
       status: 200,
       headers: { 'content-type': 'application/json' },
     }),
