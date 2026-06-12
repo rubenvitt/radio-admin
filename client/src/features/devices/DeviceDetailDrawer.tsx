@@ -1,9 +1,11 @@
-import { Descriptions, Drawer, Result, Space, Spin, Typography } from 'antd';
+import { Button, Descriptions, Drawer, Popconfirm, Result, Space, Spin, Typography, message } from 'antd';
+import { FiTrash2 } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
 import { ApiError } from '../../api/client';
 import { useAuth } from '../../auth/useAuth';
 import { UpdateStatusBadge } from '../../components/UpdateStatusBadge';
 import { useDevice } from '../../hooks/useDevice';
+import { useDeleteDevice } from '../../hooks/useDeleteDevice';
 import { DeviceEditForm } from './DeviceEditForm';
 
 export interface DeviceDetailDrawerProps {
@@ -31,10 +33,21 @@ function HiorgValue({ value }: { value: string | null }) {
 
 export function DeviceDetailDrawer({ deviceId }: DeviceDetailDrawerProps) {
   const navigate = useNavigate();
-  const { role } = useAuth();
+  const { role, isAdmin } = useAuth();
   const { data: device, isLoading, error } = useDevice(deviceId);
+  const remove = useDeleteDevice(deviceId);
 
   const close = () => navigate('/devices');
+
+  const handleDelete = async () => {
+    try {
+      await remove.mutateAsync();
+      message.success('Gerät gelöscht');
+      close();
+    } catch {
+      message.error('Löschen fehlgeschlagen');
+    }
+  };
 
   const title = device ? `${device.rufname || device.opta || device.issi} (${device.issi})` : 'Gerät';
 
@@ -72,6 +85,20 @@ export function DeviceDetailDrawer({ deviceId }: DeviceDetailDrawerProps) {
           Bearbeiten
         </Typography.Title>
         {role && <DeviceEditForm device={device} role={role} onClose={close} />}
+
+        {isAdmin && (
+          <Popconfirm
+            title="Gerät wirklich löschen?"
+            okText="Löschen"
+            okButtonProps={{ danger: true }}
+            cancelText="Abbrechen"
+            onConfirm={handleDelete}
+          >
+            <Button danger icon={<FiTrash2 />} loading={remove.isPending}>
+              Gerät löschen
+            </Button>
+          </Popconfirm>
+        )}
       </Space>
     );
   }
