@@ -70,6 +70,9 @@ export function DeviceEditForm({ device, role, onClose }: DeviceEditFormProps) {
     ...device,
     lastUpdatedAt: device.lastUpdatedAt ? dayjs(device.lastUpdatedAt) : null,
     deviceModes: modesToArray(device.deviceModes),
+    // Bind the controlled Checkbox to a real boolean (null -> false) instead of
+    // null (a React controlled/uncontrolled antipattern).
+    alamosIntegrated: device.alamosIntegrated ?? false,
   };
 
   const onFinish = async (values: FormValues) => {
@@ -96,7 +99,11 @@ export function DeviceEditForm({ device, role, onClose }: DeviceEditFormProps) {
 
     const patch: DevicePatch = {};
     for (const [key, value] of Object.entries(next) as [keyof DevicePatch, unknown][]) {
-      if (value !== device[key as keyof DeviceListItem]) {
+      const stored = device[key as keyof DeviceListItem];
+      // An unchecked Alamos checkbox (false) over a stored null is not a change:
+      // the form coerces null -> false on init, so treat them as equal.
+      if (key === 'alamosIntegrated' && value === false && stored == null) continue;
+      if (value !== stored) {
         (patch as Record<string, unknown>)[key] = value;
       }
     }
