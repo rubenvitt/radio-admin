@@ -1,15 +1,16 @@
-import { fileURLToPath } from 'node:url';
-import { dirname, resolve } from 'node:path';
+import { dirname } from 'node:path';
 import { mkdirSync } from 'node:fs';
 import Database from 'better-sqlite3';
 import { drizzle, type BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
 import * as schema from './schema';
+import { resolveMigrationsDir } from '../migrations-dir';
 
 // Resolve the migrations folder relative to THIS module, not process.cwd()
-// (under vitest the cwd is not guaranteed to be the server package root).
-const moduleDir = dirname(fileURLToPath(import.meta.url));
-const MIGRATIONS_FOLDER = resolve(moduleDir, '../../drizzle');
+// (under vitest the cwd is not the server package root). resolveMigrationsDir
+// also handles the tsup-bundled layout (dist/index.js) and the MIGRATIONS_DIR
+// env override used in Docker, so the same code path works from src and dist.
+const MIGRATIONS_FOLDER = resolveMigrationsDir(import.meta.url);
 
 export interface DbHandle {
   db: BetterSQLite3Database<typeof schema>;

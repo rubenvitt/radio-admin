@@ -9,15 +9,21 @@ const SCOPE = 'openid profile email groups';
  * Discovery (network) only happens on the first login attempt, not at import time.
  */
 export function createAuthService(cfg: AppConfig): AuthService {
+  // OIDC_* are only optional in the config schema to allow AUTH_DEV_BYPASS to
+  // boot without them. The real auth service is never constructed under bypass,
+  // so assert they are present and narrow the types up front.
+  const { OIDC_ISSUER, OIDC_CLIENT_ID, OIDC_CLIENT_SECRET, OIDC_REDIRECT_URI } = cfg;
+  if (!OIDC_ISSUER || !OIDC_CLIENT_ID || !OIDC_CLIENT_SECRET || !OIDC_REDIRECT_URI) {
+    throw new Error(
+      'createAuthService requires OIDC_ISSUER, OIDC_CLIENT_ID, OIDC_CLIENT_SECRET and OIDC_REDIRECT_URI',
+    );
+  }
+
   let configPromise: Promise<client.Configuration> | null = null;
 
   const getConfig = (): Promise<client.Configuration> => {
     if (!configPromise) {
-      configPromise = client.discovery(
-        new URL(cfg.OIDC_ISSUER),
-        cfg.OIDC_CLIENT_ID,
-        cfg.OIDC_CLIENT_SECRET,
-      );
+      configPromise = client.discovery(new URL(OIDC_ISSUER), OIDC_CLIENT_ID, OIDC_CLIENT_SECRET);
     }
     return configPromise;
   };
@@ -31,7 +37,7 @@ export function createAuthService(cfg: AppConfig): AuthService {
       const nonce = client.randomNonce();
 
       const url = client.buildAuthorizationUrl(config, {
-        redirect_uri: cfg.OIDC_REDIRECT_URI,
+        redirect_uri: OIDC_REDIRECT_URI,
         scope: SCOPE,
         code_challenge,
         code_challenge_method: 'S256',

@@ -40,4 +40,33 @@ describe('loadConfig', () => {
   it('throws when SESSION_SECRET is too short', () => {
     expect(() => loadConfig({ ...base, SESSION_SECRET: 'short' })).toThrow(/SESSION_SECRET/);
   });
+
+  describe('dev bypass relaxes prod requirements', () => {
+    it('does not require OIDC_* or SESSION_SECRET when AUTH_DEV_BYPASS=true', () => {
+      const cfg = loadConfig({ AUTH_DEV_BYPASS: 'true' });
+      expect(cfg.AUTH_DEV_BYPASS).toBe(true);
+      // a dev session secret is supplied so the session signer still works
+      expect(cfg.SESSION_SECRET.length).toBeGreaterThanOrEqual(16);
+      expect(cfg.DATABASE_PATH).toBe('./data/data.sqlite');
+    });
+
+    it('still honours a provided SESSION_SECRET under dev bypass', () => {
+      const cfg = loadConfig({
+        AUTH_DEV_BYPASS: 'true',
+        SESSION_SECRET: 'an-explicit-dev-secret-value',
+      });
+      expect(cfg.SESSION_SECRET).toBe('an-explicit-dev-secret-value');
+    });
+
+    it('still rejects a too-short SESSION_SECRET even under dev bypass', () => {
+      expect(() => loadConfig({ AUTH_DEV_BYPASS: 'true', SESSION_SECRET: 'short' })).toThrow(
+        /SESSION_SECRET/,
+      );
+    });
+
+    it('still requires OIDC_* when AUTH_DEV_BYPASS is false', () => {
+      const without = { ...base, OIDC_ISSUER: undefined };
+      expect(() => loadConfig({ ...without, AUTH_DEV_BYPASS: 'false' })).toThrow(/OIDC_ISSUER/);
+    });
+  });
 });
