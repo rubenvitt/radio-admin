@@ -1,6 +1,8 @@
 import { signSession } from '../src/auth/session';
 import { SESSION_COOKIE } from '../src/auth/oauth-tx';
 import { loadConfig, type AppConfig } from '../src/config';
+import { buildApp } from '../src/app';
+import type { Db } from '../src/repos/deviceRepo';
 import type { Role } from '@ra/shared';
 
 /** A fixed secret shared by the test config and `authCookie` so signed cookies verify. */
@@ -35,3 +37,8 @@ export async function authCookie(user: {
 
 export const adminUser = { sub: 'u-admin', name: 'Admin', role: 'admin' as const };
 export const updaterUser = { sub: 'u-updater', name: 'Updater', role: 'updater' as const };
+
+/** Build the full app wired to an in-memory test db, using the shared test config. */
+export function buildTestApp(db: Db) {
+  return buildApp(testConfig, db);
+}
