@@ -11,6 +11,9 @@ export { diffDevice } from './diff-device';
 export { classifyImportRow } from './import/classify-import-row';
 export type { ClassifyResult } from './import/classify-import-row';
 
+export { autoMapHeaders, IMPORTABLE_FIELDS } from './import/auto-map-headers';
+export type { ImportableField } from './import/auto-map-headers';
+
 export {
   suggestionFieldEnum,
   deviceRecordSchema,
