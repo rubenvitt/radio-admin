@@ -76,10 +76,18 @@ export function AppLayout() {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
+              gap: 8,
               color: mode === 'dark' ? '#fff' : undefined,
               fontWeight: 600,
             }}
           >
+            <img
+              src="/logo.png"
+              alt="radio-admin Logo"
+              width={28}
+              height={28}
+              style={{ borderRadius: 6, flexShrink: 0 }}
+            />
             radio-admin
           </div>
           {menu}
@@ -105,6 +113,13 @@ export function AppLayout() {
                 onClick={() => setDrawerOpen(true)}
               />
             )}
+            <img
+              src="/logo.png"
+              alt="radio-admin Logo"
+              width={32}
+              height={32}
+              style={{ borderRadius: 7, flexShrink: 0 }}
+            />
             <Typography.Title level={4} style={{ margin: 0 }}>
               radio-admin
             </Typography.Title>
