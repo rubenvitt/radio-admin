@@ -73,6 +73,15 @@ describe('rowToIncoming: new field normalization', () => {
     expect(make('0')).toBe(false);
   });
 
+  it('lastUpdatedAt: numeric cell parses, blank/non-numeric -> null (not NaN)', () => {
+    const mapping: ColumnMapping = { issi: 0, lastUpdatedAt: 1 };
+    expect(rowToIncoming(['1', '1700000000000'], mapping).lastUpdatedAt).toBe(1_700_000_000_000);
+    expect(rowToIncoming(['1', ''], mapping).lastUpdatedAt).toBeNull();
+    // A human date like "15.01.2024" is not a finite number -> null, never NaN.
+    expect(rowToIncoming(['1', '15.01.2024'], mapping).lastUpdatedAt).toBeNull();
+    expect(rowToIncoming(['1', 'n/a'], mapping).lastUpdatedAt).toBeNull();
+  });
+
   it('other new text fields pass through trimmed, empty -> null', () => {
     const out = rowToIncoming(
       ['  H-1  ', '', '1', '', '', '   ', '', '', '', '', '', ''],

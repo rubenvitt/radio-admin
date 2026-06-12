@@ -63,7 +63,10 @@ export function rowToIncoming(
     } else if (field === 'alamosIntegrated') {
       out.alamosIntegrated = normalizeAlamos(typeof raw === 'string' ? raw : '');
     } else if (NUMERIC_FIELDS.has(field)) {
-      out[field] = value === '' ? null : Number(value);
+      // Guard against un-parseable cells (e.g. "15.01.2024" -> NaN): a non-finite
+      // result becomes null so we never persist/log "NaN" for lastUpdatedAt.
+      const n = Number(value);
+      out[field] = value === '' ? null : Number.isFinite(n) ? n : null;
     } else {
       out[field] = value === '' ? null : value;
     }
