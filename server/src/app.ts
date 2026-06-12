@@ -3,6 +3,7 @@ import type { AppConfig } from './config';
 import { requireAuth } from './auth/middleware';
 import type { Db } from './repos/deviceRepo';
 import { deviceRoutes } from './routes/devices';
+import { suggestionRoutes } from './routes/suggestions';
 
 // Augment Hono context with the request-scoped database handle, so later phases
 // (e.g. the CSV import routes) can read `c.get('db')` instead of closing over it.
@@ -30,6 +31,7 @@ export function buildApp(cfg: AppConfig, db: Db): Hono {
   app.use('/api/*', requireAuth(cfg));
 
   app.route('/api', deviceRoutes(db));
+  app.route('/api', suggestionRoutes(db));
 
   return app;
 }
