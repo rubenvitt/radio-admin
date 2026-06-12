@@ -1,6 +1,9 @@
 import { Hono } from 'hono';
 import type { AppConfig } from './config';
 import { requireAuth } from './auth/middleware';
+import { createAuthRoutes } from './auth/routes';
+import { createAuthService } from './auth/auth-service';
+import { createFakeAuthService } from './auth/fake-auth-service';
 import type { Db } from './repos/deviceRepo';
 import { deviceRoutes } from './routes/devices';
 import { suggestionRoutes } from './routes/suggestions';
@@ -30,7 +33,15 @@ export function buildApp(cfg: AppConfig, db: Db): Hono {
     return next();
   });
 
-  // All /api routes require an authenticated session.
+  // Auth router FIRST, before the global /api/* guard: login/callback/logout must
+  // be PUBLIC (otherwise OIDC login is unreachable — the guard would 401 before
+  // login runs). /api/auth/me carries its own inline requireAuth. Under dev bypass
+  // the OIDC service is never used, so a fake service is wired (createAuthService
+  // requires OIDC config and is only constructed for the real flow).
+  const auth = cfg.AUTH_DEV_BYPASS ? createFakeAuthService() : createAuthService(cfg);
+  app.route('/', createAuthRoutes(cfg, auth));
+
+  // All remaining /api routes require an authenticated session.
   app.use('/api/*', requireAuth(cfg));
 
   app.route('/api', deviceRoutes(db));
