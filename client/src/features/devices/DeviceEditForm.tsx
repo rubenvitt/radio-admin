@@ -1,29 +1,15 @@
-import {
-  Button,
-  Checkbox,
-  DatePicker,
-  Form,
-  Input,
-  Select,
-  Space,
-  message,
-} from 'antd';
+import { Button, Form, Space, message } from 'antd';
 import dayjs from 'dayjs';
 import {
-  DEVICE_MODES,
-  STATUS_OPTIONS,
   UPDATER_EDITABLE_FIELDS,
   type DevicePatch,
   type Role,
 } from '@ra/shared';
 import { ApiError } from '../../api/client';
-import { Combobox } from '../../components/Combobox';
-import { useSuggestions } from '../../hooks/useSuggestions';
-import { useSoftwareVersions } from '../../hooks/useSoftwareVersions';
-import type { SuggestionField } from '../../hooks/useSuggestions';
 import { useUpdateDevice } from '../../hooks/useUpdateDevice';
 import type { DeviceListItem } from '../../hooks/useDevices';
 import { arrayToModes, modesToArray } from './deviceModes';
+import { DeviceFields } from './DeviceFields';
 
 export interface DeviceEditFormProps {
   device: DeviceListItem;
@@ -37,30 +23,13 @@ type FormValues = Omit<DeviceListItem, 'lastUpdatedAt' | 'deviceModes'> & {
   deviceModes: string[];
 };
 
-/** Combobox field bound to a `useSuggestions` source. */
-function SuggestComboItem({
-  name,
-  label,
-  field,
-  disabled,
-}: {
-  name: keyof DeviceListItem;
-  label: string;
-  field: SuggestionField;
-  disabled: boolean;
-}) {
-  const { data, isLoading } = useSuggestions(field);
-  return (
-    <Form.Item name={name} label={label}>
-      <Combobox options={data ?? []} loading={isLoading} disabled={disabled} placeholder={label} />
-    </Form.Item>
-  );
-}
+// Boolean checkbox fields whose stored `null` renders as `false`; an untouched
+// `false` over a stored `null` is not a real change (see diff loop below).
+const BOOL_FIELDS = ['alamosIntegrated', 'loanable'] as const;
 
 export function DeviceEditForm({ device, role, onClose }: DeviceEditFormProps) {
   const [form] = Form.useForm<FormValues>();
   const update = useUpdateDevice(device.id);
-  const softwareVersions = useSoftwareVersions();
 
   const isUpdater = role === 'updater';
   const lockedFor = (field: string) =>
@@ -70,9 +39,10 @@ export function DeviceEditForm({ device, role, onClose }: DeviceEditFormProps) {
     ...device,
     lastUpdatedAt: device.lastUpdatedAt ? dayjs(device.lastUpdatedAt) : null,
     deviceModes: modesToArray(device.deviceModes),
-    // Bind the controlled Checkbox to a real boolean (null -> false) instead of
+    // Bind the controlled Checkboxes to real booleans (null -> false) instead of
     // null (a React controlled/uncontrolled antipattern).
     alamosIntegrated: device.alamosIntegrated ?? false,
+    loanable: device.loanable ?? false,
   };
 
   const onFinish = async (values: FormValues) => {
@@ -95,14 +65,16 @@ export function DeviceEditForm({ device, role, onClose }: DeviceEditFormProps) {
       bedieneinheit: values.bedieneinheit ?? null,
       deviceModes: arrayToModes(values.deviceModes),
       alamosIntegrated: values.alamosIntegrated ?? null,
+      loanable: values.loanable ?? null,
     };
 
     const patch: DevicePatch = {};
     for (const [key, value] of Object.entries(next) as [keyof DevicePatch, unknown][]) {
       const stored = device[key as keyof DeviceListItem];
-      // An unchecked Alamos checkbox (false) over a stored null is not a change:
+      // An unchecked boolean checkbox (false) over a stored null is not a change:
       // the form coerces null -> false on init, so treat them as equal.
-      if (key === 'alamosIntegrated' && value === false && stored == null) continue;
+      if ((BOOL_FIELDS as readonly string[]).includes(key) && value === false && stored == null)
+        continue;
       if (value !== stored) {
         (patch as Record<string, unknown>)[key] = value;
       }
@@ -133,72 +105,7 @@ export function DeviceEditForm({ device, role, onClose }: DeviceEditFormProps) {
       onFinish={onFinish}
       requiredMark
     >
-      <Form.Item name="issi" label="ISSI" rules={[{ required: true, message: 'ISSI ist erforderlich' }]}>
-        {/* issi is the match key; admin-edit-only. */}
-        <Input disabled={lockedFor('issi')} />
-      </Form.Item>
-
-      <SuggestComboItem name="rufname" label="Rufname" field="rufname" disabled={lockedFor('rufname')} />
-      <SuggestComboItem name="opta" label="OPTA" field="opta" disabled={lockedFor('opta')} />
-      <SuggestComboItem name="funktion" label="Funktion" field="funktion" disabled={lockedFor('funktion')} />
-      <SuggestComboItem name="hersteller" label="Hersteller" field="hersteller" disabled={lockedFor('hersteller')} />
-      <SuggestComboItem
-        name="bedieneinheit"
-        label="Bedieneinheit"
-        field="bedieneinheit"
-        disabled={lockedFor('bedieneinheit')}
-      />
-      <SuggestComboItem name="deviceType" label="Gerät" field="deviceType" disabled={lockedFor('deviceType')} />
-      <SuggestComboItem name="location" label="Lagerort" field="location" disabled={lockedFor('location')} />
-      <SuggestComboItem name="assignedTo" label="Zuordnung" field="assignedTo" disabled={lockedFor('assignedTo')} />
-
-      <Form.Item name="serialNumber" label="Seriennummer">
-        <Input disabled={lockedFor('serialNumber')} />
-      </Form.Item>
-
-      <Form.Item name="status" label="Status">
-        <Select
-          allowClear
-          disabled={lockedFor('status')}
-          options={STATUS_OPTIONS.map((s) => ({ label: s, value: s }))}
-        />
-      </Form.Item>
-
-      <Form.Item name="softwareVersion" label="Letztes Update">
-        <Combobox
-          allowCreate
-          options={(softwareVersions.data ?? []).map((v) => v.value)}
-          loading={softwareVersions.isLoading}
-          disabled={lockedFor('softwareVersion')}
-          placeholder="Softwareversion"
-        />
-      </Form.Item>
-
-      <Form.Item name="lastUpdatedAt" label="Zuletzt aktualisiert">
-        <DatePicker style={{ width: '100%' }} disabled={lockedFor('lastUpdatedAt')} />
-      </Form.Item>
-
-      <Form.Item name="deviceModes" label="Gerätefunktionen">
-        <Select
-          mode="multiple"
-          allowClear
-          disabled={lockedFor('deviceModes')}
-          options={DEVICE_MODES.map((m) => ({ label: m, value: m }))}
-        />
-      </Form.Item>
-
-      <Form.Item name="alamosIntegrated" label="Alamos integriert" valuePropName="checked">
-        <Checkbox disabled={lockedFor('alamosIntegrated')}>Integriert</Checkbox>
-      </Form.Item>
-
-      <Form.Item name="hiorgId" label="Hiorg-ID">
-        {/* Edit as text; read view (DeviceDetailDrawer) renders it as a link. */}
-        <Input disabled={lockedFor('hiorgId')} />
-      </Form.Item>
-
-      <Form.Item name="notes" label="Bemerkung">
-        <Input.TextArea rows={3} disabled={lockedFor('notes')} />
-      </Form.Item>
+      <DeviceFields lockedFor={lockedFor} />
 
       <Form.Item>
         <Space>

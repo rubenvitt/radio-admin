@@ -1,4 +1,16 @@
-import { Button, Descriptions, Drawer, Popconfirm, Result, Space, Spin, Typography, message } from 'antd';
+import {
+  Button,
+  Descriptions,
+  Drawer,
+  Grid,
+  Popconfirm,
+  Result,
+  Space,
+  Spin,
+  Tag,
+  Typography,
+  message,
+} from 'antd';
 import { FiTrash2 } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
 import { ApiError } from '../../api/client';
@@ -33,6 +45,7 @@ function HiorgValue({ value }: { value: string | null }) {
 
 export function DeviceDetailDrawer({ deviceId }: DeviceDetailDrawerProps) {
   const navigate = useNavigate();
+  const screens = Grid.useBreakpoint();
   const { role, isAdmin } = useAuth();
   const { data: device, isLoading, error } = useDevice(deviceId);
   const remove = useDeleteDevice(deviceId);
@@ -72,6 +85,11 @@ export function DeviceDetailDrawer({ deviceId }: DeviceDetailDrawerProps) {
           <Descriptions.Item label="Hiorg-ID">
             <HiorgValue value={device.hiorgId} />
           </Descriptions.Item>
+          <Descriptions.Item label="Ausleihbar">
+            <Tag color={device.loanable ? 'green' : 'default'}>
+              {device.loanable ? 'Ja' : 'Nein'}
+            </Tag>
+          </Descriptions.Item>
           <Descriptions.Item label="Zuletzt aktualisiert">
             {formatTimestamp(device.lastUpdatedAt)}
           </Descriptions.Item>
@@ -104,7 +122,13 @@ export function DeviceDetailDrawer({ deviceId }: DeviceDetailDrawerProps) {
   }
 
   return (
-    <Drawer title={title} open onClose={close} width={520} destroyOnHidden>
+    <Drawer
+      title={title}
+      open
+      onClose={close}
+      width={screens.md ? 720 : '100%'}
+      destroyOnHidden
+    >
       {body}
     </Drawer>
   );

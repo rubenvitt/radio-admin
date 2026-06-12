@@ -42,6 +42,7 @@ const device: DeviceListItem = {
   bedieneinheit: null,
   deviceModes: 'TMO,DMO',
   alamosIntegrated: true,
+  loanable: false,
   createdAt: 1,
   updatedAt: 1,
   createdBy: null,
@@ -66,6 +67,8 @@ test('updater: identity fields are locked, update fields editable', () => {
   expect(screen.getByLabelText('Seriennummer')).toBeDisabled();
   // Combobox identity field locked (verifies the Combobox forwards `id`/disabled).
   expect(screen.getByLabelText('Rufname')).toBeDisabled();
+  // loanable is master data (not in UPDATER_EDITABLE_FIELDS) → locked for updaters.
+  expect(screen.getByLabelText('Für Ausleihe freigegeben')).toBeDisabled();
   // Allowlisted update fields stay enabled (Status select + softwareVersion Combobox).
   expect(screen.getByLabelText('Status')).toBeEnabled();
   expect(screen.getByLabelText('Letztes Update')).toBeEnabled();

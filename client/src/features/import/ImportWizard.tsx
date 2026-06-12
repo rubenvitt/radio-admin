@@ -53,6 +53,7 @@ const FIELD_LABELS: Record<ImportableField, string> = {
   bedieneinheit: 'Bedieneinheit',
   deviceModes: 'Gerätefunktionen',
   alamosIntegrated: 'Alamos integriert',
+  loanable: 'Ausleihbar',
 };
 
 const CLASS_META: Record<ImportRowClass, { color: string; label: string }> = {
