@@ -44,7 +44,11 @@ describe('deviceCreateSchema', () => {
   });
 
   it('strips unknown keys (e.g. createdAt is server-owned)', () => {
-    const parsed = deviceCreateSchema.parse({ issi: '1', createdAt: 999, id: 'x' } as any);
+    const parsed = deviceCreateSchema.parse({
+      issi: '1',
+      createdAt: 999,
+      id: 'x',
+    } as Record<string, unknown>);
     expect('createdAt' in parsed).toBe(false);
     expect('id' in parsed).toBe(false);
   });
