@@ -17,11 +17,21 @@ export function DevicesPage() {
       ? (rawStatus as UpdateStatus)
       : undefined;
   const q = searchParams.get('q') ?? undefined;
+  const status = searchParams.get('status') ?? undefined;
+  const location = searchParams.get('location') ?? undefined;
 
   return (
     <>
       <Typography.Title level={3}>Geräte</Typography.Title>
-      <DeviceList initialParams={{ updateStatus, q }} />
+      {/*
+        Remount on any query change: DeviceList seeds its filters into useState
+        once, so without a key a back-navigation to /devices with different (or
+        no) query would keep the stale filters from the previous mount.
+      */}
+      <DeviceList
+        key={searchParams.toString()}
+        initialParams={{ updateStatus, q, status, location }}
+      />
       {id && <DeviceDetailDrawer deviceId={id} />}
     </>
   );

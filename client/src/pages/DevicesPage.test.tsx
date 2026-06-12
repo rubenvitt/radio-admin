@@ -1,4 +1,5 @@
 import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, expect, test, vi } from 'vitest';
@@ -9,11 +10,13 @@ afterEach(() => vi.restoreAllMocks());
 function renderAt(url: string) {
   const spy = vi.spyOn(global, 'fetch').mockImplementation((input) => {
     const reqUrl = String(input);
-    const body = reqUrl.includes('/api/devices')
+    const body = reqUrl.includes('/api/devices?')
       ? { rows: [], total: 0, page: 1, pageSize: 20 }
       : reqUrl.includes('/api/auth/me')
         ? { name: 'Admin', role: 'admin' }
-        : {};
+        : reqUrl.includes('/api/software-versions') || reqUrl.includes('/api/suggestions')
+          ? []
+          : {};
     return Promise.resolve(
       new Response(JSON.stringify(body), {
         status: 200,
@@ -47,4 +50,41 @@ test('seeds the updateStatus filter from the URL query param', async () => {
 
   // The filter Select reflects the seeded value.
   expect(screen.getByText('Veraltet')).toBeInTheDocument();
+});
+
+test('seeds the status filter from the URL query param', async () => {
+  const spy = renderAt('/devices?status=Defekt');
+
+  await waitFor(() => {
+    const calledWithFilter = spy.mock.calls.some(
+      ([input]) => String(input).includes('/api/devices?') && String(input).includes('status=Defekt'),
+    );
+    expect(calledWithFilter).toBe(true);
+  });
+  expect(screen.getByText('Defekt')).toBeInTheDocument();
+});
+
+test('selecting a Status option updates the device-list query', async () => {
+  const user = userEvent.setup();
+  const spy = renderAt('/devices');
+
+  // Wait for the initial (unfiltered) list query.
+  await waitFor(() => {
+    expect(spy.mock.calls.some(([input]) => String(input).includes('/api/devices?'))).toBe(true);
+  });
+
+  // Open the Status select (the 2nd combobox: Update-Stand then Status) and pick
+  // "Wartung". antd renders each Select trigger with role="combobox".
+  const comboboxes = screen.getAllByRole('combobox');
+  const statusCombobox = comboboxes.at(-1)!;
+  await user.click(statusCombobox);
+  await user.click(await screen.findByText('Wartung'));
+
+  await waitFor(() => {
+    const calledWithFilter = spy.mock.calls.some(
+      ([input]) =>
+        String(input).includes('/api/devices?') && String(input).includes('status=Wartung'),
+    );
+    expect(calledWithFilter).toBe(true);
+  });
 });

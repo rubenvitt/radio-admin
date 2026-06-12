@@ -15,7 +15,7 @@ import type { ColumnsType, TablePaginationConfig } from 'antd/es/table';
 import type { FilterValue, SorterResult } from 'antd/es/table/interface';
 import { FiCheck, FiPlus } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
-import type { UpdateStatus } from '@ra/shared';
+import { STATUS_OPTIONS, type UpdateStatus } from '@ra/shared';
 import { useAuth } from '../../auth/useAuth';
 import { UpdateStatusBadge } from '../../components/UpdateStatusBadge';
 import { useDevices, type DeviceListItem, type DeviceListParams } from '../../hooks/useDevices';
@@ -141,6 +141,16 @@ export function DeviceList({ initialParams }: DeviceListProps = {}) {
           options={UPDATE_STATUS_OPTIONS}
           onChange={(value) =>
             setParams((prev) => ({ ...prev, updateStatus: value ?? undefined, page: 1 }))
+          }
+          style={{ width: 180 }}
+        />
+        <Select<string>
+          allowClear
+          placeholder="Status"
+          value={params.status}
+          options={STATUS_OPTIONS.map((s) => ({ label: s, value: s }))}
+          onChange={(value) =>
+            setParams((prev) => ({ ...prev, status: value ?? undefined, page: 1 }))
           }
           style={{ width: 180 }}
         />
