@@ -1,3 +1,11 @@
+import { RouterProvider } from 'react-router-dom';
+import { AppProviders } from './app/AppProviders';
+import { router } from './routes/router';
+
 export default function App() {
-  return <h1>radio-admin</h1>;
+  return (
+    <AppProviders>
+      <RouterProvider router={router} />
+    </AppProviders>
+  );
 }
