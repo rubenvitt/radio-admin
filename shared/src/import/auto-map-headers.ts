@@ -10,6 +10,13 @@ export const IMPORTABLE_FIELDS = [
   'softwareVersion',
   'lastUpdatedAt',
   'notes',
+  'hiorgId',
+  'opta',
+  'funktion',
+  'hersteller',
+  'bedieneinheit',
+  'deviceModes',
+  'alamosIntegrated',
 ] as const;
 
 export type ImportableField = (typeof IMPORTABLE_FIELDS)[number];
@@ -36,13 +43,25 @@ const SYNONYMS: Record<string, ImportableField> = {
   inventarnummer: 'serialNumber',
   serial: 'serialNumber',
   geraetetyp: 'deviceType',
+  geraet: 'deviceType',
+  // "Gerät" decomposes (NFD) to "gerat", not "geraet" — register both spellings.
+  gerat: 'deviceType',
   typ: 'deviceType',
   modell: 'deviceType',
   status: 'status',
   zustand: 'status',
   standort: 'location',
+  lagerort: 'location',
   ort: 'location',
   location: 'location',
+  hiorgid: 'hiorgId',
+  opta: 'opta',
+  funktion: 'funktion',
+  hersteller: 'hersteller',
+  bedieneinheit: 'bedieneinheit',
+  alamos: 'alamosIntegrated',
+  alamosintegriert: 'alamosIntegrated',
+  alamosintegration: 'alamosIntegrated',
   zuordnung: 'assignedTo',
   zugeordnet: 'assignedTo',
   zustaendig: 'assignedTo',
@@ -72,7 +91,12 @@ const SYNONYMS: Record<string, ImportableField> = {
 export function autoMapHeaders(headers: string[]): Record<string, ImportableField> {
   const result: Record<string, ImportableField> = {};
   for (const raw of headers) {
-    const field = SYNONYMS[norm(raw)];
+    const n = norm(raw);
+    // The "Gerätefunktionen-TMO/DMO/REP/GAT" header normalizes to a long token
+    // (slashes/dashes stripped), so match it by prefix rather than exact name.
+    // "ä" decomposes (NFD) to "a", so accept both the "gerate…" and "geraete…" forms.
+    const isDeviceModes = n.startsWith('geratefunktionen') || n.startsWith('geraetefunktionen');
+    const field = isDeviceModes ? 'deviceModes' : SYNONYMS[n];
     if (field) {
       result[raw] = field;
     }

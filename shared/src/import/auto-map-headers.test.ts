@@ -53,4 +53,40 @@ describe('autoMapHeaders', () => {
     expect(IMPORTABLE_FIELDS).toContain('softwareVersion');
     expect(IMPORTABLE_FIELDS).not.toContain('id');
   });
+
+  it("auto-maps the customer's real German export header row", () => {
+    const headers = [
+      'Hiorg-ID',
+      'OPTA',
+      'ISSI',
+      'Funktion',
+      'Lagerort',
+      'Hersteller',
+      'Gerät',
+      'Bedieneinheit',
+      'Gerätefunktionen-TMO/DMO/REP/GAT',
+      'Status',
+      'Bemerkung',
+      'Alamos',
+    ];
+    expect(autoMapHeaders(headers)).toEqual({
+      'Hiorg-ID': 'hiorgId',
+      OPTA: 'opta',
+      ISSI: 'issi',
+      Funktion: 'funktion',
+      Lagerort: 'location',
+      Hersteller: 'hersteller',
+      'Gerät': 'deviceType',
+      Bedieneinheit: 'bedieneinheit',
+      'Gerätefunktionen-TMO/DMO/REP/GAT': 'deviceModes',
+      Status: 'status',
+      Bemerkung: 'notes',
+      Alamos: 'alamosIntegrated',
+    });
+  });
+
+  it('maps Alamos / "Alamos integriert" and Geraet (no umlaut) variants', () => {
+    expect(autoMapHeaders(['Alamos integriert'])['Alamos integriert']).toBe('alamosIntegrated');
+    expect(autoMapHeaders(['Geraet'])['Geraet']).toBe('deviceType');
+  });
 });

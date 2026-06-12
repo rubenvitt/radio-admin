@@ -1,4 +1,4 @@
-import { classifyImportRow } from '@ra/shared';
+import { classifyImportRow, DEVICE_MODES } from '@ra/shared';
 import type { DeviceRecord, DevicePatch, FieldDiff, ImportRowClass, Role, ImportCommit } from '@ra/shared';
 
 export interface ClassifiedRow {
@@ -17,6 +17,35 @@ export type ColumnMapping = ImportCommit['mapping'];
 // Number-typed device fields the CSV may target.
 const NUMERIC_FIELDS = new Set<string>(['lastUpdatedAt']);
 
+// Trimmed/lowercased cell values that mark an Alamos-integriert checkbox as true.
+const ALAMOS_TRUTHY = new Set<string>(['x', 'ja', 'yes', 'y', '1', 'true', 'wahr', '✓']);
+
+/**
+ * Normalizes a Gerätefunktionen cell into a canonical comma-joined subset of
+ * DEVICE_MODES: split on `/ , ;` + whitespace, uppercase, keep only known modes,
+ * emit in fixed DEVICE_MODES order (deduped). Empty/no-known-tokens -> null.
+ */
+function normalizeDeviceModes(cell: string): string | null {
+  const tokens = new Set(
+    cell
+      .split(/[/,;\s]+/)
+      .map((t) => t.trim().toUpperCase())
+      .filter((t) => t !== ''),
+  );
+  const ordered = DEVICE_MODES.filter((m) => tokens.has(m));
+  return ordered.length === 0 ? null : ordered.join(',');
+}
+
+/**
+ * Normalizes an Alamos cell: empty/whitespace -> null; a recognized truthy token
+ * (case-insensitive) -> true; anything else (e.g. "nein", "0") -> false.
+ */
+function normalizeAlamos(cell: string): boolean | null {
+  const v = cell.trim().toLowerCase();
+  if (v === '') return null;
+  return ALAMOS_TRUTHY.has(v);
+}
+
 /** Turns one raw string row into a typed { issi, ...patch } via the column mapping. */
 export function rowToIncoming(
   row: string[],
@@ -29,6 +58,10 @@ export function rowToIncoming(
     const value = typeof raw === 'string' ? raw.trim() : '';
     if (field === 'issi') {
       out.issi = value;
+    } else if (field === 'deviceModes') {
+      out.deviceModes = normalizeDeviceModes(typeof raw === 'string' ? raw : '');
+    } else if (field === 'alamosIntegrated') {
+      out.alamosIntegrated = normalizeAlamos(typeof raw === 'string' ? raw : '');
     } else if (NUMERIC_FIELDS.has(field)) {
       out[field] = value === '' ? null : Number(value);
     } else {

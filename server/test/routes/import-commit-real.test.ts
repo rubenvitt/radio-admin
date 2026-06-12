@@ -128,4 +128,87 @@ describe('POST /api/import/commit (real run)', () => {
     const events = db.select().from(deviceEvents).where(eq(deviceEvents.deviceId, dev!.id)).all();
     expect(events.filter((e) => e.source === 'csv-import')).toHaveLength(0);
   });
+
+  // Column layout matching the customer's real export header order:
+  // Hiorg-ID; OPTA; ISSI; Funktion; Lagerort; Hersteller; Gerät; Bedieneinheit;
+  // Gerätefunktionen-TMO/DMO/REP/GAT; Status; Bemerkung; Alamos
+  const REAL_MAPPING = {
+    hiorgId: 0,
+    opta: 1,
+    issi: 2,
+    funktion: 3,
+    location: 4,
+    hersteller: 5,
+    deviceType: 6,
+    bedieneinheit: 7,
+    deviceModes: 8,
+    status: 9,
+    notes: 10,
+    alamosIntegrated: 11,
+  };
+
+  it('admin: creates a device from the real export row, parsing deviceModes + Alamos "x"', async () => {
+    const { db } = makeTestDb();
+    const app = buildTestApp(db);
+    const res = await app.request('/api/import/commit', {
+      method: 'POST',
+      headers: { Cookie: await authCookie(aliceAdmin), 'content-type': 'application/json' },
+      body: JSON.stringify({
+        dryRun: false,
+        mapping: REAL_MAPPING,
+        rows: [
+          [
+            'H-42',
+            'DRK BW 01/83/01',
+            '8001',
+            'GRTW',
+            'Lager 3',
+            'Motorola',
+            'MTP850',
+            'TPH900',
+            'GAT/TMO', // out-of-order -> canonical TMO,GAT
+            'Einsatzbereit',
+            'Akku schwach',
+            'x',
+          ],
+        ],
+      }),
+    });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as CommitBody;
+    expect(body.summary).toMatchObject({ created: 1 });
+
+    const dev = db.select().from(devices).where(eq(devices.issi, '8001')).get();
+    expect(dev?.hiorgId).toBe('H-42');
+    expect(dev?.opta).toBe('DRK BW 01/83/01');
+    expect(dev?.funktion).toBe('GRTW');
+    expect(dev?.location).toBe('Lager 3');
+    expect(dev?.hersteller).toBe('Motorola');
+    expect(dev?.deviceType).toBe('MTP850');
+    expect(dev?.bedieneinheit).toBe('TPH900');
+    expect(dev?.deviceModes).toBe('TMO,GAT'); // canonical order
+    expect(dev?.status).toBe('Einsatzbereit');
+    expect(dev?.notes).toBe('Akku schwach');
+    expect(dev?.alamosIntegrated).toBe(true);
+  });
+
+  it('updater import does NOT change hiorgId (master data is not updater-editable)', async () => {
+    const { db } = makeTestDb();
+    createDevice(db, { issi: '1001', hiorgId: 'H-ORIG', status: 'einsatzbereit' }, 'seed');
+    const app = buildTestApp(db);
+    const res = await app.request('/api/import/commit', {
+      method: 'POST',
+      headers: { Cookie: await authCookie(uweUpdater), 'content-type': 'application/json' },
+      body: JSON.stringify({
+        dryRun: false,
+        // updater maps hiorgId + status; only status may be written.
+        mapping: { issi: 0, hiorgId: 1, status: 2 },
+        rows: [['1001', 'H-HACK', 'in Reparatur']],
+      }),
+    });
+    expect(res.status).toBe(200);
+    const dev = db.select().from(devices).where(eq(devices.issi, '1001')).get();
+    expect(dev?.hiorgId).toBe('H-ORIG'); // master data untouched by updater
+    expect(dev?.status).toBe('in Reparatur'); // allowed field applied
+  });
 });
