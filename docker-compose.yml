@@ -1,0 +1,17 @@
+services:
+  app:
+    build: .
+    image: radio-admin:local
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    environment:
+      - DATABASE_PATH=/data/data.sqlite
+      - PORT=3000
+    volumes:
+      - radio-data:/data
+
+volumes:
+  radio-data:
