@@ -32,7 +32,7 @@ export const deviceEvents = sqliteTable(
     id: text('id').primaryKey().$defaultFn(newId),
     deviceId: text('device_id')
       .notNull()
-      .references(() => devices.id),
+      .references(() => devices.id, { onDelete: 'cascade' }),
     field: text('field').notNull(),
     oldValue: text('old_value'),
     newValue: text('new_value'),

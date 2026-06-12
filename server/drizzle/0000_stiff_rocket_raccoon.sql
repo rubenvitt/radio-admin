@@ -7,7 +7,7 @@ CREATE TABLE `device_events` (
 	`changed_by` text,
 	`changed_at` integer NOT NULL,
 	`source` text NOT NULL,
-	FOREIGN KEY (`device_id`) REFERENCES `devices`(`id`) ON UPDATE no action ON DELETE no action
+	FOREIGN KEY (`device_id`) REFERENCES `devices`(`id`) ON UPDATE no action ON DELETE cascade
 );
 --> statement-breakpoint
 CREATE INDEX `device_events_device_id_idx` ON `device_events` (`device_id`);--> statement-breakpoint

@@ -30,7 +30,17 @@ export function createDb(path: string): DbHandle {
   return { db, sqlite };
 }
 
-const DATABASE_PATH = process.env.DATABASE_PATH ?? './data/data.sqlite';
+let appHandle: DbHandle | undefined;
 
-/** Application-wide database, initialized from DATABASE_PATH with migrations applied. */
-export const { db, sqlite } = createDb(DATABASE_PATH);
+/**
+ * Lazily-initialized application-wide database (from DATABASE_PATH, migrations applied).
+ * Lazy so that merely importing this module has no side effects — route modules and
+ * tests can import types/helpers without opening or migrating the production database.
+ * Tests build isolated databases via `createDb(':memory:')` / `makeTestDb()` instead.
+ */
+export function getDb(): DbHandle {
+  if (!appHandle) {
+    appHandle = createDb(process.env.DATABASE_PATH ?? './data/data.sqlite');
+  }
+  return appHandle;
+}
