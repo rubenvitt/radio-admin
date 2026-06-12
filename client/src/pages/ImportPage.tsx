@@ -1,4 +1,11 @@
-// Placeholder — the real ImportWizard is built in Phase 5B (Task 5.14).
+import { Typography } from 'antd';
+import { ImportWizard } from '../features/import/ImportWizard';
+
 export function ImportPage() {
-  return <div>Import</div>;
+  return (
+    <>
+      <Typography.Title level={3}>CSV-Import</Typography.Title>
+      <ImportWizard />
+    </>
+  );
 }
