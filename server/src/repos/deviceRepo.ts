@@ -41,6 +41,20 @@ export function deleteDevice(db: Db, id: string): boolean {
   return res.changes > 0;
 }
 
+export function updateDevice(
+  db: Db,
+  id: string,
+  patch: Partial<DeviceRecord>,
+  userId: string | null,
+): DeviceRecord | undefined {
+  const now = Date.now();
+  db.update(devices)
+    .set({ ...patch, updatedAt: now, updatedBy: userId })
+    .where(eq(devices.id, id))
+    .run();
+  return getDeviceById(db, id);
+}
+
 export interface ListParams {
   q?: string;
   status?: string;

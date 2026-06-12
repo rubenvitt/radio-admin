@@ -2,12 +2,22 @@ import { Hono } from 'hono';
 import {
   computeUpdateStatus,
   deviceCreateSchema,
+  devicePatchSchema,
+  filterEditableFields,
+  diffDevice,
   type UpdateStatus,
   type FieldDiff,
+  type DeviceRecord,
 } from '@ra/shared';
 import { requireRole } from '../auth/middleware';
 import type { Db } from '../repos/deviceRepo';
-import { listDevices, getDeviceById, createDevice, writeEvents } from '../repos/deviceRepo';
+import {
+  listDevices,
+  getDeviceById,
+  createDevice,
+  updateDevice,
+  writeEvents,
+} from '../repos/deviceRepo';
 import {
   getReferenceVersion,
   insertSoftwareVersionIfNew,
@@ -56,6 +66,36 @@ export function deviceRoutes(db: Db) {
     writeEvents(db, device.id, diffs, user.sub, 'create');
 
     return c.json(device, 201);
+  });
+
+  // PATCH is open to any role; the field allowlist (not a route guard) is the
+  // authorization boundary — disallowed fields are silently dropped, not rejected.
+  r.patch('/devices/:id', async (c) => {
+    const id = c.req.param('id');
+    const existing = getDeviceById(db, id);
+    if (!existing) return c.json({ error: 'not_found' }, 404);
+
+    const json = await c.req.json().catch(() => null);
+    const parsed = devicePatchSchema.safeParse(json);
+    if (!parsed.success) return c.json({ error: 'invalid', issues: parsed.error.issues }, 400);
+
+    const user = c.get('user');
+    const allowed = filterEditableFields(user.role, parsed.data) as Partial<DeviceRecord>;
+    const diffs = diffDevice(existing, allowed);
+
+    if (diffs.length === 0) {
+      const ref0 = getReferenceVersion(db);
+      return c.json({ ...existing, updateStatus: computeUpdateStatus(existing, ref0) });
+    }
+
+    if (allowed.softwareVersion) {
+      insertSoftwareVersionIfNew(db, allowed.softwareVersion, user.sub);
+    }
+    const updated = updateDevice(db, id, allowed, user.sub)!;
+    writeEvents(db, id, diffs, user.sub, 'manual');
+
+    const ref = getReferenceVersion(db);
+    return c.json({ ...updated, updateStatus: computeUpdateStatus(updated, ref) });
   });
 
   return r;
