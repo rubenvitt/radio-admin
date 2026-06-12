@@ -42,10 +42,12 @@ describe('autoMapHeaders', () => {
     expect(m['']).toBeUndefined();
   });
 
-  it('does not map two headers to the same field (first match wins)', () => {
-    const m = autoMapHeaders(['Typ', 'Gerätetyp']);
+  it('does NOT dedup: distinct synonyms for one field all map to it', () => {
+    // "Typ" and "Geraetetyp" are both registered deviceType synonyms; both map.
+    // (Resolving the collision to a single source column is the caller's job.)
+    const m = autoMapHeaders(['Typ', 'Geraetetyp']);
     expect(m['Typ']).toBe('deviceType');
-    expect(m['Gerätetyp']).toBeUndefined();
+    expect(m['Geraetetyp']).toBe('deviceType');
   });
 
   it('exposes the set of importable target fields', () => {

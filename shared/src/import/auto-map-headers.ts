@@ -85,8 +85,10 @@ const SYNONYMS: Record<string, ImportableField> = {
  * Maps raw CSV headers to device fields by normalized-name similarity.
  * Returns a record keyed by the ORIGINAL header string. Headers whose
  * normalized name matches no known synonym are omitted (left for manual
- * mapping in the UI). Distinct headers that share a target field all map
- * to it — the synonym table is the single source of truth.
+ * mapping in the UI). This does NOT dedup by target field: distinct headers
+ * that share a synonym (e.g. "Typ" and "Gerätetyp" -> deviceType) all map to
+ * that field. Resolving such collisions to a single source column is the
+ * caller's responsibility — the synonym table is the source of truth here.
  */
 export function autoMapHeaders(headers: string[]): Record<string, ImportableField> {
   const result: Record<string, ImportableField> = {};

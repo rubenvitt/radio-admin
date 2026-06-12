@@ -29,6 +29,11 @@ interface ApplyArgs {
 export function applyCommit(args: ApplyArgs): { summary: ImportSummary; rows: ClassifiedRow[] } {
   const { db, classified, incomingByIndex, existingByIssi, role, actor } = args;
 
+  // better-sqlite3 transactions are fully synchronous: the callback runs to
+  // completion (or throws) before db.transaction() returns, and a thrown error
+  // rolls back the entire batch on the outer `db` handle. This is intentional —
+  // there is no async work inside, so we get all-or-nothing import semantics
+  // without needing a savepoint/async wrapper.
   db.transaction(() => {
     for (const row of classified) {
       const incoming = incomingByIndex.get(row.rowIndex) ?? {};
