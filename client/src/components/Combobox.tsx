@@ -9,6 +9,14 @@ export interface ComboboxProps {
   loading?: boolean;
   disabled?: boolean;
   allowCreate?: boolean;
+  /**
+   * Forwarded to the inner antd `Select`. antd `Form.Item` injects `id` into its
+   * child control to associate the rendered `<label htmlFor>`; without forwarding
+   * it, `getByLabelText`/label-clicks (and the role-gated form test) cannot reach
+   * the control. Also accept `aria-*` so callers can label it directly.
+   */
+  id?: string;
+  'aria-label'?: string;
 }
 
 interface Option {
@@ -24,6 +32,8 @@ export function Combobox({
   loading,
   disabled,
   allowCreate = true,
+  id,
+  'aria-label': ariaLabel,
 }: ComboboxProps) {
   const [searchValue, setSearchValue] = useState('');
 
@@ -42,6 +52,8 @@ export function Combobox({
 
   return (
     <Select<string>
+      id={id}
+      aria-label={ariaLabel}
       showSearch
       allowClear
       value={value ?? undefined}
