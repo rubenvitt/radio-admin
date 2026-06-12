@@ -8,6 +8,9 @@ export { UPDATER_EDITABLE_FIELDS, filterEditableFields } from './editable-fields
 
 export { diffDevice } from './diff-device';
 
+export { classifyImportRow } from './import/classify-import-row';
+export type { ClassifyResult } from './import/classify-import-row';
+
 export {
   suggestionFieldEnum,
   deviceRecordSchema,
