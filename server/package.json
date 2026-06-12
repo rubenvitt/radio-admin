@@ -1,0 +1,22 @@
+{
+  "name": "@ra/server",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "scripts": {
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate"
+  },
+  "dependencies": {
+    "@ra/shared": "workspace:*",
+    "drizzle-orm": "^0.38.0",
+    "better-sqlite3": "^12.10.0",
+    "@paralleldrive/cuid2": "^2.2.2"
+  },
+  "devDependencies": {
+    "drizzle-kit": "^0.31.5",
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^22.10.0"
+  }
+}

@@ -3,12 +3,19 @@ packages:
   - 'server'
   - 'client'
 
-# pnpm 11: do not block scripts before running tasks. esbuild (a vitest
+# pnpm 11: do not block scripts before running tasks. esbuild (a vitest/drizzle
 # transitive dep) ships its native binary via @esbuild/<platform> and works
 # without its postinstall, but pnpm's pre-run deps check otherwise hard-fails
-# on the ignored build. better-sqlite3 is still explicitly built below.
+# on the ignored build.
 verifyDepsBeforeRun: false
 strictDepBuilds: false
 
+# better-sqlite3 has a real native postinstall that MUST run (the bindings file
+# is compiled here). pnpm 11's allowBuilds is the authoritative allow/deny map;
+# onlyBuiltDependencies is kept for back-compat with the plan.
 onlyBuiltDependencies:
   - better-sqlite3
+
+allowBuilds:
+  better-sqlite3: true
+  esbuild: true
