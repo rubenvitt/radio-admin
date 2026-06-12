@@ -1,12 +1,16 @@
 import { z } from 'zod';
 
-// Combobox-suggestable text fields (NOT issi, NOT softwareVersion).
+// Combobox-suggestable text fields (NOT issi, NOT softwareVersion, NOT hiorgId).
 export const suggestionFieldEnum = z.enum([
   'rufname',
   'deviceType',
   'status',
   'location',
   'assignedTo',
+  'opta',
+  'funktion',
+  'hersteller',
+  'bedieneinheit',
 ]);
 
 // Full device record shape (server-owned fields included) for typing DeviceRecord.
@@ -22,6 +26,15 @@ export const deviceRecordSchema = z.object({
   softwareVersion: z.string().nullable(),
   lastUpdatedAt: z.number().int().nullable(),
   notes: z.string().nullable(),
+  // New customer master-data fields (all nullable).
+  hiorgId: z.string().nullable(),
+  opta: z.string().nullable(),
+  funktion: z.string().nullable(),
+  hersteller: z.string().nullable(),
+  bedieneinheit: z.string().nullable(),
+  // Canonical comma-joined subset of DEVICE_MODES, e.g. "TMO,DMO" (plain string).
+  deviceModes: z.string().nullable(),
+  alamosIntegrated: z.boolean().nullable(),
   createdAt: z.number().int(),
   updatedAt: z.number().int(),
   createdBy: z.string().nullable(),
@@ -42,6 +55,13 @@ export const deviceCreateSchema = z
     softwareVersion: z.string().nullable().optional(),
     lastUpdatedAt: z.number().int().nullable().optional(),
     notes: z.string().nullable().optional(),
+    hiorgId: z.string().nullable().optional(),
+    opta: z.string().nullable().optional(),
+    funktion: z.string().nullable().optional(),
+    hersteller: z.string().nullable().optional(),
+    bedieneinheit: z.string().nullable().optional(),
+    deviceModes: z.string().nullable().optional(),
+    alamosIntegrated: z.boolean().nullable().optional(),
   })
   .strip();
 
@@ -58,6 +78,13 @@ export const devicePatchSchema = z
     softwareVersion: z.string().nullable().optional(),
     lastUpdatedAt: z.number().int().nullable().optional(),
     notes: z.string().nullable().optional(),
+    hiorgId: z.string().nullable().optional(),
+    opta: z.string().nullable().optional(),
+    funktion: z.string().nullable().optional(),
+    hersteller: z.string().nullable().optional(),
+    bedieneinheit: z.string().nullable().optional(),
+    deviceModes: z.string().nullable().optional(),
+    alamosIntegrated: z.boolean().nullable().optional(),
   })
   .strip();
 
@@ -75,6 +102,13 @@ export const importCommitSchema = z.object({
       softwareVersion: z.number().int().optional(),
       lastUpdatedAt: z.number().int().optional(),
       notes: z.number().int().optional(),
+      hiorgId: z.number().int().optional(),
+      opta: z.number().int().optional(),
+      funktion: z.number().int().optional(),
+      hersteller: z.number().int().optional(),
+      bedieneinheit: z.number().int().optional(),
+      deviceModes: z.number().int().optional(),
+      alamosIntegrated: z.number().int().optional(),
     })
     .strip(),
   rows: z.array(z.array(z.string())),

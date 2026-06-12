@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "2bdd2aeb-0b83-4a4b-a916-e5535b3bfcce",
+  "id": "e05e74cc-b1cf-4cc7-be41-0c7fe95cc1dd",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "device_events": {
@@ -168,6 +168,55 @@
         "notes": {
           "name": "notes",
           "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "hiorg_id": {
+          "name": "hiorg_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "opta": {
+          "name": "opta",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "funktion": {
+          "name": "funktion",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "hersteller": {
+          "name": "hersteller",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "bedieneinheit": {
+          "name": "bedieneinheit",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "device_modes": {
+          "name": "device_modes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "alamos_integrated": {
+          "name": "alamos_integrated",
+          "type": "integer",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false

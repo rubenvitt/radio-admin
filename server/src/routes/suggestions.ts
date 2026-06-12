@@ -11,6 +11,10 @@ const COLUMN: Record<SuggestionField, SQLiteColumn> = {
   status: devices.status,
   location: devices.location,
   assignedTo: devices.assignedTo,
+  opta: devices.opta,
+  funktion: devices.funktion,
+  hersteller: devices.hersteller,
+  bedieneinheit: devices.bedieneinheit,
 };
 
 export function suggestionRoutes(db: Db) {

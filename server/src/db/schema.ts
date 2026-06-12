@@ -13,6 +13,16 @@ export const devices = sqliteTable('devices', {
   softwareVersion: text('software_version'),
   lastUpdatedAt: integer('last_updated_at'),
   notes: text('notes'),
+  // Customer master-data fields (all nullable). deviceModes is a plain canonical
+  // comma-joined subset of DEVICE_MODES (e.g. "TMO,DMO"); alamosIntegrated is a
+  // 0/1 integer surfaced as a boolean via drizzle's { mode: 'boolean' }.
+  hiorgId: text('hiorg_id'),
+  opta: text('opta'),
+  funktion: text('funktion'),
+  hersteller: text('hersteller'),
+  bedieneinheit: text('bedieneinheit'),
+  deviceModes: text('device_modes'),
+  alamosIntegrated: integer('alamos_integrated', { mode: 'boolean' }),
   createdAt: integer('created_at').notNull(),
   updatedAt: integer('updated_at').notNull(),
   createdBy: text('created_by'),
