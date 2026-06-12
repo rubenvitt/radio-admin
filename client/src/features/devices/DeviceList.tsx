@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
+  Button,
   Card,
   Grid,
   Input,
@@ -12,11 +13,13 @@ import {
 } from 'antd';
 import type { ColumnsType, TablePaginationConfig } from 'antd/es/table';
 import type { FilterValue, SorterResult } from 'antd/es/table/interface';
-import { FiCheck } from 'react-icons/fi';
+import { FiCheck, FiPlus } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
 import type { UpdateStatus } from '@ra/shared';
+import { useAuth } from '../../auth/useAuth';
 import { UpdateStatusBadge } from '../../components/UpdateStatusBadge';
 import { useDevices, type DeviceListItem, type DeviceListParams } from '../../hooks/useDevices';
+import { DeviceFormModal } from './DeviceFormModal';
 
 const UPDATE_STATUS_OPTIONS: { value: UpdateStatus; label: string }[] = [
   { value: 'aktuell', label: 'Aktuell' },
@@ -29,14 +32,14 @@ const PAGE_SIZE = 20;
 export interface DeviceListProps {
   /** Optional initial query params (e.g. a pre-filtered view linked from the dashboard). */
   initialParams?: Partial<DeviceListParams>;
-  /** Slot for the admin "Gerät anlegen" button (rendered in the toolbar). */
-  toolbarExtra?: React.ReactNode;
 }
 
-export function DeviceList({ initialParams, toolbarExtra }: DeviceListProps) {
+export function DeviceList({ initialParams }: DeviceListProps = {}) {
   const screens = Grid.useBreakpoint();
   const isDesktop = screens.md;
   const navigate = useNavigate();
+  const { isAdmin } = useAuth();
+  const [createOpen, setCreateOpen] = useState(false);
 
   const [params, setParams] = useState<DeviceListParams>({
     page: 1,
@@ -140,7 +143,11 @@ export function DeviceList({ initialParams, toolbarExtra }: DeviceListProps) {
           style={{ width: 180 }}
         />
       </Space>
-      {toolbarExtra}
+      {isAdmin && (
+        <Button type="primary" icon={<FiPlus />} onClick={() => setCreateOpen(true)}>
+          Gerät anlegen
+        </Button>
+      )}
     </Space>
   );
 
@@ -200,6 +207,7 @@ export function DeviceList({ initialParams, toolbarExtra }: DeviceListProps) {
           )}
         />
       )}
+      {isAdmin && <DeviceFormModal open={createOpen} onClose={() => setCreateOpen(false)} />}
     </Space>
   );
 }

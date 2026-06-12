@@ -77,7 +77,7 @@ export function DeviceDetailDrawer({ deviceId }: DeviceDetailDrawerProps) {
   }
 
   return (
-    <Drawer title={title} open onClose={close} width={520} destroyOnClose>
+    <Drawer title={title} open onClose={close} width={520} destroyOnHidden>
       {body}
     </Drawer>
   );
