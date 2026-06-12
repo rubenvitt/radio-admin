@@ -62,7 +62,8 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/${{ github.repository_owner }}/radio-admin
+          # owner/repo, lowercased by metadata-action -> ghcr.io/rubenvitt/radio-admin
+          images: ghcr.io/${{ github.repository }}
           tags: |
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
             type=sha
