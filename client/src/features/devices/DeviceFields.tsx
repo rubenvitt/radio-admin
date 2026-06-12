@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { Checkbox, Col, DatePicker, Divider, Form, Input, Row, Select } from 'antd';
 import { DEVICE_MODES, STATUS_OPTIONS } from '@ra/shared';
 import { Combobox } from '../../components/Combobox';
@@ -15,6 +16,12 @@ import { useSoftwareVersions } from '../../hooks/useSoftwareVersions';
  */
 export interface DeviceFieldsProps {
   lockedFor?: (field: string) => boolean;
+  /**
+   * Optional read-only Update-Stand badge rendered in the "Update" section.
+   * The edit form passes the device's badge; the create modal omits it (a new
+   * device has no update status yet).
+   */
+  updateStatusSlot?: ReactNode;
 }
 
 const COL = { xs: 24, sm: 12 } as const;
@@ -41,7 +48,7 @@ function SuggestCol({
   );
 }
 
-export function DeviceFields({ lockedFor = () => false }: DeviceFieldsProps) {
+export function DeviceFields({ lockedFor = () => false, updateStatusSlot }: DeviceFieldsProps) {
   const softwareVersions = useSoftwareVersions();
 
   return (
@@ -151,6 +158,11 @@ export function DeviceFields({ lockedFor = () => false }: DeviceFieldsProps) {
             <DatePicker style={{ width: '100%' }} disabled={lockedFor('lastUpdatedAt')} />
           </Form.Item>
         </Col>
+        {updateStatusSlot && (
+          <Col {...COL}>
+            <Form.Item label="Update-Stand">{updateStatusSlot}</Form.Item>
+          </Col>
+        )}
       </Row>
 
       <Divider orientation="left">Bemerkung</Divider>

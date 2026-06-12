@@ -15,7 +15,6 @@ import { FiTrash2 } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
 import { ApiError } from '../../api/client';
 import { useAuth } from '../../auth/useAuth';
-import { UpdateStatusBadge } from '../../components/UpdateStatusBadge';
 import { useDevice } from '../../hooks/useDevice';
 import { useDeleteDevice } from '../../hooks/useDeleteDevice';
 import { DeviceEditForm } from './DeviceEditForm';
@@ -79,9 +78,6 @@ export function DeviceDetailDrawer({ deviceId }: DeviceDetailDrawerProps) {
     body = (
       <Space direction="vertical" size="large" style={{ width: '100%' }}>
         <Descriptions size="small" column={1} bordered>
-          <Descriptions.Item label="Update-Stand">
-            <UpdateStatusBadge status={device.updateStatus} />
-          </Descriptions.Item>
           <Descriptions.Item label="Hiorg-ID">
             <HiorgValue value={device.hiorgId} />
           </Descriptions.Item>

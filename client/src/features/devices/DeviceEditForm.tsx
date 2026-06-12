@@ -6,6 +6,7 @@ import {
   type Role,
 } from '@ra/shared';
 import { ApiError } from '../../api/client';
+import { UpdateStatusBadge } from '../../components/UpdateStatusBadge';
 import { useUpdateDevice } from '../../hooks/useUpdateDevice';
 import type { DeviceListItem } from '../../hooks/useDevices';
 import { arrayToModes, modesToArray } from './deviceModes';
@@ -105,7 +106,10 @@ export function DeviceEditForm({ device, role, onClose }: DeviceEditFormProps) {
       onFinish={onFinish}
       requiredMark
     >
-      <DeviceFields lockedFor={lockedFor} />
+      <DeviceFields
+        lockedFor={lockedFor}
+        updateStatusSlot={<UpdateStatusBadge status={device.updateStatus} />}
+      />
 
       <Form.Item>
         <Space>
