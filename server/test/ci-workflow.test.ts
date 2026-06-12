@@ -41,8 +41,8 @@ describe('ci.yml docker job', () => {
     expect(yml).toMatch(/registry:\s*ghcr\.io/);
     expect(yml).toMatch(/password:\s*\$\{\{\s*secrets\.GITHUB_TOKEN\s*\}\}/);
   });
-  it('targets ghcr.io/<owner>/radio-admin with latest/sha/tag', () => {
-    expect(yml).toMatch(/ghcr\.io\/\$\{\{\s*github\.repository_owner\s*\}\}\/radio-admin/);
+  it('targets ghcr.io/<owner/repo> with latest/sha/tag', () => {
+    expect(yml).toMatch(/ghcr\.io\/\$\{\{\s*github\.repository\s*\}\}/);
     expect(yml).toMatch(/type=sha/);
     expect(yml).toMatch(/type=raw,value=latest/);
     expect(yml).toMatch(/type=ref,event=tag/);
