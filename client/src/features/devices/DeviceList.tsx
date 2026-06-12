@@ -93,9 +93,11 @@ export function DeviceList({ initialParams }: DeviceListProps = {}) {
           d.alamosIntegrated ? <FiCheck aria-label="Alamos integriert" /> : null,
       },
       {
+        // "Letztes Update" shows softwareVersion (spec §3), so sort by it too —
+        // the column key must match the displayed dataIndex, not lastUpdatedAt.
         title: 'Letztes Update',
         dataIndex: 'softwareVersion',
-        key: 'lastUpdatedAt',
+        key: 'softwareVersion',
         sorter: true,
         render: (value: string | null) => value || '—',
       },

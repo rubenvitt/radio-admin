@@ -68,4 +68,12 @@ describe('listDevices', () => {
     const page2 = listDevices(db, { sort: 'rufname:desc', page: 2, pageSize: 2 });
     expect(page2.rows.map((r) => r.rufname)).toEqual(['Alpha']);
   });
+
+  it('sorts by softwareVersion (the "Letztes Update" column)', () => {
+    const { db } = makeTestDb();
+    seed(db);
+    // desc: FW 2.0 (Alpha) > FW 1.0 (Bravo) > NULL (Charlie) last.
+    const rows = listDevices(db, { sort: 'softwareVersion:desc' }).rows;
+    expect(rows.map((r) => r.rufname)).toEqual(['Alpha', 'Bravo', 'Charlie']);
+  });
 });

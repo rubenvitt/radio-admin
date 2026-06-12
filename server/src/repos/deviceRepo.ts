@@ -86,6 +86,7 @@ const SORTABLE: Record<string, SQLiteColumn> = {
   issi: devices.issi,
   status: devices.status,
   location: devices.location,
+  softwareVersion: devices.softwareVersion,
   lastUpdatedAt: devices.lastUpdatedAt,
   createdAt: devices.createdAt,
 };
