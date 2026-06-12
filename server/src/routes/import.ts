@@ -4,8 +4,9 @@ import type { DeviceRecord } from '@ra/shared';
 import type { Db } from '../repos/deviceRepo';
 import { decodeCsv } from '../import/decode-csv';
 import { parseCsvText } from '../import/parse-csv';
-import { classifyRows, type ColumnMapping } from '../import/commit-service';
+import { classifyRows, rowToIncoming, type ColumnMapping } from '../import/commit-service';
 import { loadDevicesByIssi } from '../import/device-lookup';
+import { applyCommit } from '../import/apply-commit';
 
 export function importRoutes(_db: Db) {
   const r = new Hono();
@@ -44,7 +45,8 @@ export function importRoutes(_db: Db) {
     }
     const { dryRun, mapping, rows } = parsed.data;
     const db = c.get('db');
-    const role = c.get('user').role;
+    const user = c.get('user');
+    const role = user.role;
 
     const issis = collectIssis(rows, mapping);
     const existingByIssi: Map<string, DeviceRecord> = loadDevicesByIssi(db, issis);
@@ -54,8 +56,12 @@ export function importRoutes(_db: Db) {
     if (dryRun) {
       return c.json({ dryRun: true, summary, rows: classified });
     }
-    // Real-run handled in Task 4.9.
-    return c.json({ error: 'not implemented' }, 501);
+
+    const incomingByIndex = new Map<number, Record<string, unknown>>();
+    rows.forEach((row, i) => incomingByIndex.set(i, rowToIncoming(row, mapping)));
+    const actor = user.name ?? user.sub;
+    const result = applyCommit({ db, classified, incomingByIndex, existingByIssi, role, actor });
+    return c.json({ dryRun: false, summary: result.summary, rows: result.rows });
   });
 
   return r;
