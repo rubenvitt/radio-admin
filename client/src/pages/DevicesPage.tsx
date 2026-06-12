@@ -1,5 +1,12 @@
-// Placeholder — the real DeviceList + DetailDrawer are built in Phase 5B
-// (Tasks 5.11/5.12). The `:id` route param will drive the detail drawer there.
+import { Typography } from 'antd';
+import { DeviceList } from '../features/devices/DeviceList';
+
 export function DevicesPage() {
-  return <div>Geräte</div>;
+  // The `:id` route param drives the DeviceDetailDrawer, mounted in Task 5.12.
+  return (
+    <>
+      <Typography.Title level={3}>Geräte</Typography.Title>
+      <DeviceList />
+    </>
+  );
 }
