@@ -125,7 +125,7 @@ test('revoking a token deletes it and refreshes the list', async () => {
     expect(screen.getAllByRole('button', { name: /Widerrufen/i }).length).toBeGreaterThan(1),
   );
   const buttons = screen.getAllByRole('button', { name: /Widerrufen/i });
-  await user.click(buttons[buttons.length - 1]);
+  await user.click(buttons.at(-1) as HTMLElement);
 
   await waitFor(() => expect(deletes).toHaveLength(1));
 });

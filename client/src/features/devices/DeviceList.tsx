@@ -13,7 +13,7 @@ import {
 } from 'antd';
 import type { ColumnsType, TablePaginationConfig } from 'antd/es/table';
 import type { FilterValue, SorterResult } from 'antd/es/table/interface';
-import { FiCheck, FiPlus } from 'react-icons/fi';
+import { FiCheck, FiDownload, FiPlus } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
 import { STATUS_OPTIONS, type UpdateStatus } from '@ra/shared';
 import { useAuth } from '../../auth/useAuth';
@@ -65,6 +65,17 @@ export function DeviceList({ initialParams }: DeviceListProps = {}) {
   const total = data?.total ?? 0;
 
   const openDetail = (id: string) => navigate(`/devices/${id}`);
+
+  // Trigger a CSV download. A programmatic same-origin GET anchor carries the
+  // session cookie; `download` hints the browser to save rather than navigate.
+  const handleExport = () => {
+    const anchor = document.createElement('a');
+    anchor.href = '/api/devices/export';
+    anchor.download = '';
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+  };
 
   const columns = useMemo<ColumnsType<DeviceListItem>>(
     () => [
@@ -156,9 +167,14 @@ export function DeviceList({ initialParams }: DeviceListProps = {}) {
         />
       </Space>
       {isAdmin && (
-        <Button type="primary" icon={<FiPlus />} onClick={() => setCreateOpen(true)}>
-          Gerät anlegen
-        </Button>
+        <Space wrap>
+          <Button icon={<FiDownload />} onClick={handleExport}>
+            Exportieren
+          </Button>
+          <Button type="primary" icon={<FiPlus />} onClick={() => setCreateOpen(true)}>
+            Gerät anlegen
+          </Button>
+        </Space>
       )}
     </Space>
   );
