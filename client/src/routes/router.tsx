@@ -7,6 +7,7 @@ import { ForbiddenPage } from '../pages/ForbiddenPage';
 import { ImportPage } from '../pages/ImportPage';
 import { LoginPage } from '../pages/LoginPage';
 import { NotFoundPage } from '../pages/NotFoundPage';
+import { SettingsPage } from '../pages/SettingsPage';
 
 export const routes: RouteObject[] = [
   { path: '/login', element: <LoginPage /> },
@@ -22,6 +23,7 @@ export const routes: RouteObject[] = [
       { path: '/devices', element: <DevicesPage /> },
       { path: '/devices/:id', element: <DevicesPage /> },
       { path: '/import', element: <ImportPage /> },
+      { path: '/einstellungen', element: <SettingsPage /> },
     ],
   },
   { path: '*', element: <NotFoundPage /> },

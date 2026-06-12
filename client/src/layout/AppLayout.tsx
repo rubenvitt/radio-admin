@@ -2,6 +2,7 @@ import { Button, Drawer, Grid, Layout, Menu, Space, Typography, theme } from 'an
 import { useState, type ReactNode } from 'react';
 import {
   FiGrid,
+  FiKey,
   FiLogOut,
   FiMenu,
   FiMoon,
@@ -20,12 +21,15 @@ interface NavItem {
   key: string;
   label: string;
   icon: ReactNode;
+  /** When true, only admins see this nav entry. */
+  adminOnly?: boolean;
 }
 
 const navItems: NavItem[] = [
   { key: '/', label: 'Dashboard', icon: <FiGrid /> },
   { key: '/devices', label: 'Geräte', icon: <FiRadio /> },
   { key: '/import', label: 'Import', icon: <FiUpload /> },
+  { key: '/einstellungen', label: 'API-Zugriff', icon: <FiKey />, adminOnly: true },
 ];
 
 async function logout() {
@@ -40,7 +44,7 @@ export function AppLayout() {
   const screens = Grid.useBreakpoint();
   const isMobile = !screens.md;
   const { mode, toggle } = useTheme();
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -48,12 +52,14 @@ export function AppLayout() {
     token: { colorBgContainer },
   } = theme.useToken();
 
+  const visibleNavItems = navItems.filter((item) => !item.adminOnly || isAdmin);
+
   const menu = (
     <Menu
       mode="inline"
       theme={mode === 'dark' ? 'dark' : 'light'}
       selectedKeys={[location.pathname]}
-      items={navItems.map((item) => ({
+      items={visibleNavItems.map((item) => ({
         key: item.key,
         icon: item.icon,
         label: item.label,

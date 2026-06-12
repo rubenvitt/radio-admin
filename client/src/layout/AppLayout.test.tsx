@@ -44,6 +44,8 @@ test('mobile: hamburger opens drawer with nav links', async () => {
   const drawer = await screen.findByRole('dialog');
   expect(within(drawer).getByText('Geräte')).toBeInTheDocument();
   expect(within(drawer).getByText('Import')).toBeInTheDocument();
+  // The admin-only API-access item shows for the admin user mocked above.
+  expect(within(drawer).getByText('API-Zugriff')).toBeInTheDocument();
 });
 
 test('renders the theme toggle button', async () => {
