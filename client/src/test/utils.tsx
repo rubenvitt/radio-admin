@@ -20,5 +20,4 @@ export function renderWithQuery(
   return render(ui, { wrapper: QueryWrapper, ...options });
 }
 
-// eslint-disable-next-line react-refresh/only-export-components
 export * from '@testing-library/react';
