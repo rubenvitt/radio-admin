@@ -16,7 +16,16 @@ export function useUpdateDevice(id: string) {
       await queryClient.cancelQueries({ queryKey: ['device', id] });
       const previous = queryClient.getQueryData<DeviceListItem>(['device', id]);
       if (previous) {
-        queryClient.setQueryData<DeviceListItem>(['device', id], { ...previous, ...patch });
+        // Don't optimistically merge softwareVersion/lastUpdatedAt: the cached
+        // `updateStatus` badge is derived from softwareVersion server-side, so a
+        // local merge would show a stale badge until onSettled refetches. Let
+        // those two fields (and the badge) update together on the brief refetch.
+        const optimistic: Record<string, unknown> = { ...previous };
+        for (const [key, value] of Object.entries(patch)) {
+          if (key === 'softwareVersion' || key === 'lastUpdatedAt') continue;
+          optimistic[key] = value;
+        }
+        queryClient.setQueryData<DeviceListItem>(['device', id], optimistic as DeviceListItem);
       }
       return { previous };
     },
