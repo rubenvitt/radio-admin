@@ -126,9 +126,11 @@ export function AppLayout() {
               height={32}
               style={{ borderRadius: 7, flexShrink: 0 }}
             />
-            <Typography.Title level={4} style={{ margin: 0 }}>
-              radio-admin
-            </Typography.Title>
+            {!isMobile && (
+              <Typography.Title level={4} style={{ margin: 0 }}>
+                radio-admin
+              </Typography.Title>
+            )}
           </Space>
 
           <Space>
@@ -138,7 +140,11 @@ export function AppLayout() {
               icon={mode === 'dark' ? <FiSun /> : <FiMoon />}
               onClick={toggle}
             />
-            {user && <Typography.Text>{user.name}</Typography.Text>}
+            {!isMobile && user && (
+              <Typography.Text style={{ maxWidth: 200 }} ellipsis>
+                {user.name}
+              </Typography.Text>
+            )}
             <Button
               type="text"
               aria-label="Abmelden"
@@ -147,7 +153,7 @@ export function AppLayout() {
                 void logout();
               }}
             >
-              Abmelden
+              {!isMobile && 'Abmelden'}
             </Button>
           </Space>
         </Header>
@@ -159,7 +165,7 @@ export function AppLayout() {
 
       {isMobile && (
         <Drawer
-          title="Navigation"
+          title={user?.name ?? 'Navigation'}
           placement="left"
           open={drawerOpen}
           onClose={() => setDrawerOpen(false)}
