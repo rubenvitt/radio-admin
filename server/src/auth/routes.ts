@@ -6,6 +6,7 @@ import type { AuthService } from './types';
 import { signSession } from './session';
 import { signOauthTx, verifyOauthTx, OAUTH_TX_COOKIE, SESSION_COOKIE } from './oauth-tx';
 import { requireAuth } from './middleware';
+import { upsertUser } from '../repos/userRepo';
 
 export function createAuthRoutes(cfg: AppConfig, auth: AuthService) {
   const app = new Hono();
@@ -50,6 +51,12 @@ export function createAuthRoutes(cfg: AppConfig, auth: AuthService) {
       updaterGroup: cfg.OIDC_UPDATER_GROUP,
     });
     if (role === null) return c.redirect('/403', 302);
+
+    // Record the user so audit columns (which store `sub`) can be resolved to a
+    // display name. The db is injected by buildApp's `app.use('*')`; guard for
+    // callers that mount this router without that middleware (e.g. unit tests).
+    const db = c.get('db');
+    if (db) upsertUser(db, result.sub, result.name);
 
     const session = await signSession(
       { sub: result.sub, name: result.name, role },

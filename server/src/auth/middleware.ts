@@ -5,6 +5,7 @@ import type { AppConfig } from '../config';
 import type { SessionClaims } from './types';
 import { verifySession } from './session';
 import { SESSION_COOKIE } from './oauth-tx';
+import { upsertUser } from '../repos/userRepo';
 
 // Augment Hono context variable map with the authenticated user.
 declare module 'hono' {
@@ -22,6 +23,12 @@ export function requireAuth(cfg: AppConfig): MiddlewareHandler {
         role: cfg.DEV_USER_ROLE,
         exp: Math.floor(Date.now() / 1000) + 3600,
       });
+      // Record the bypass user so audit columns resolve to a display name. A
+      // per-request upsert is acceptable — it's a cheap conflict-update. The db
+      // is injected by buildApp's `app.use('*')`; guard for callers that mount
+      // requireAuth without that middleware (e.g. unit tests).
+      const db = c.get('db');
+      if (db) upsertUser(db, 'dev-user', cfg.DEV_USER_NAME);
       return next();
     }
     const token = getCookie(c, SESSION_COOKIE);
