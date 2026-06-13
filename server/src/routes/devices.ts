@@ -24,6 +24,7 @@ import {
   getReferenceVersion,
   insertSoftwareVersionIfNew,
 } from '../repos/softwareVersionRepo';
+import { resolveUserNames } from '../repos/userRepo';
 
 /** Parse a query param to a positive integer, or undefined (-> caller default). */
 function safePositiveInt(raw: string | undefined): number | undefined {
@@ -55,7 +56,17 @@ export function deviceRoutes(db: Db) {
   r.get('/devices/:id/events', (c) => {
     const id = c.req.param('id');
     if (!getDeviceById(db, id)) return c.json({ error: 'not_found' }, 404);
-    return c.json(getDeviceEvents(db, id));
+    const events = getDeviceEvents(db, id);
+    // Additively resolve `changedBy` (a stored `sub`) to a display name; fall
+    // back to the raw sub so the field is never blank.
+    const subs = events.map((e) => e.changedBy).filter((s): s is string => s != null);
+    const names = resolveUserNames(db, subs);
+    return c.json(
+      events.map((e) => ({
+        ...e,
+        changedByName: e.changedBy != null ? (names.get(e.changedBy) ?? e.changedBy) : null,
+      })),
+    );
   });
 
   r.get('/devices/:id', (c) => {
@@ -63,7 +74,16 @@ export function deviceRoutes(db: Db) {
     if (!device) return c.json({ error: 'not_found' }, 404);
     const ref = getReferenceVersion(db);
     const updateStatus = computeUpdateStatus(device, ref);
-    return c.json({ ...device, updateStatus });
+    // Additively resolve the audit subs to display names; keep the raw
+    // createdBy/updatedBy and fall back to the raw sub when unknown.
+    const subs = [device.createdBy, device.updatedBy].filter((s): s is string => s != null);
+    const names = resolveUserNames(db, subs);
+    return c.json({
+      ...device,
+      updateStatus,
+      createdByName: device.createdBy != null ? (names.get(device.createdBy) ?? device.createdBy) : null,
+      updatedByName: device.updatedBy != null ? (names.get(device.updatedBy) ?? device.updatedBy) : null,
+    });
   });
 
   r.post('/devices', requireRole('admin'), async (c) => {

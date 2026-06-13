@@ -3,6 +3,7 @@ import { makeTestDb } from '../src/db/test-utils';
 import { buildTestApp, authCookie, adminUser } from './helpers';
 import { createDevice } from '../src/repos/deviceRepo';
 import { insertSoftwareVersionIfNew } from '../src/repos/softwareVersionRepo';
+import { upsertUser } from '../src/repos/userRepo';
 
 describe('GET /api/devices(/:id)', () => {
   it('lists devices with updateStatus and reads one by id', async () => {
@@ -33,5 +34,40 @@ describe('GET /api/devices(/:id)', () => {
     const app = buildTestApp(db);
     const res = await app.request('/api/devices');
     expect(res.status).toBe(401);
+  });
+
+  it('resolves createdBy/updatedBy subs to display names', async () => {
+    const { db } = makeTestDb();
+    upsertUser(db, adminUser.sub, adminUser.name);
+    const d = createDevice(db, { issi: '700', rufname: 'Echo' }, adminUser.sub);
+    const app = buildTestApp(db);
+    const cookie = await authCookie(adminUser);
+
+    const res = await app.request(`/api/devices/${d.id}`, { headers: { Cookie: cookie } });
+    expect(res.status).toBe(200);
+    const one = (await res.json()) as {
+      createdBy: string;
+      updatedBy: string;
+      createdByName: string;
+      updatedByName: string;
+    };
+    // Raw subs are preserved (additive resolution).
+    expect(one.createdBy).toBe(adminUser.sub);
+    expect(one.updatedBy).toBe(adminUser.sub);
+    expect(one.createdByName).toBe(adminUser.name);
+    expect(one.updatedByName).toBe(adminUser.name);
+  });
+
+  it('falls back to the raw sub when no users row exists', async () => {
+    const { db } = makeTestDb();
+    const d = createDevice(db, { issi: '701', rufname: 'Foxtrot' }, 'ghost-sub');
+    const app = buildTestApp(db);
+    const cookie = await authCookie(adminUser);
+
+    const res = await app.request(`/api/devices/${d.id}`, { headers: { Cookie: cookie } });
+    expect(res.status).toBe(200);
+    const one = (await res.json()) as { createdByName: string; updatedByName: string };
+    expect(one.createdByName).toBe('ghost-sub');
+    expect(one.updatedByName).toBe('ghost-sub');
   });
 });
