@@ -51,6 +51,10 @@ describe('ci.yml docker job', () => {
     expect(yml).toMatch(/docker\/setup-buildx-action/);
     expect(yml).toMatch(/docker\/build-push-action/);
   });
+  it('builds a multi-arch image (amd64 + arm64) with QEMU', () => {
+    expect(yml).toMatch(/docker\/setup-qemu-action/);
+    expect(yml).toMatch(/platforms:\s*linux\/amd64,linux\/arm64/);
+  });
   it('runs the smoke test before pushing', () => {
     const smoke = yml.indexOf('smoke.sh');
     const push = yml.indexOf('push: true');
