@@ -91,7 +91,9 @@ export function DeviceDetailDrawer({ deviceId }: DeviceDetailDrawerProps) {
           </Descriptions.Item>
           <Descriptions.Item label="Geändert">
             {formatTimestamp(device.updatedAt)}
-            {device.updatedBy ? ` · ${device.updatedBy}` : ''}
+            {device.updatedByName ?? device.updatedBy
+              ? ` · ${device.updatedByName ?? device.updatedBy}`
+              : ''}
           </Descriptions.Item>
         </Descriptions>
 

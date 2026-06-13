@@ -28,8 +28,10 @@ const device = {
   alamosIntegrated: true,
   createdAt: 1,
   updatedAt: 1,
-  createdBy: null,
-  updatedBy: null,
+  createdBy: 'sub-abc',
+  updatedBy: 'sub-abc',
+  createdByName: 'Max Mustermann',
+  updatedByName: 'Max Mustermann',
   updateStatus: 'aktuell',
 };
 
@@ -75,4 +77,11 @@ test('updater does not see the delete control', async () => {
   // The edit form renders once the device loads; the delete button must not.
   await waitFor(() => expect(screen.getByRole('button', { name: 'Speichern' })).toBeInTheDocument());
   expect(screen.queryByRole('button', { name: /Gerät löschen/ })).not.toBeInTheDocument();
+});
+
+test('shows the resolved updatedByName (not the raw sub) on the Geändert line', async () => {
+  stubFetch('admin');
+  renderDrawer();
+  await waitFor(() => expect(screen.getByText(/Max Mustermann/)).toBeInTheDocument());
+  expect(screen.queryByText(/sub-abc/)).not.toBeInTheDocument();
 });
