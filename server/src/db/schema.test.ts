@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { devices, softwareVersions, deviceEvents, apiTokens } from './schema';
+import { devices, softwareVersions, deviceEvents, apiTokens, users } from './schema';
 
 function columnNames(table: object): string[] {
   // drizzle table columns are enumerable own keys mapped to Column objects
@@ -78,5 +78,11 @@ describe('schema: deviceEvents', () => {
         'source',
       ].sort(),
     );
+  });
+});
+
+describe('schema: users', () => {
+  it('has exactly the contracted columns', () => {
+    expect(columnNames(users).sort()).toEqual(['sub', 'name', 'lastSeenAt'].sort());
   });
 });

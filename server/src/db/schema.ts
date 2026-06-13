@@ -52,6 +52,18 @@ export const apiTokens = sqliteTable('api_tokens', {
   revokedAt: integer('revoked_at'),
 });
 
+/**
+ * Known users keyed by their stable identity `sub` (a UUID for PocketID users).
+ * Populated on authentication so audit columns (which store `sub`) can be
+ * resolved to a human-readable `name` for display. `lastSeenAt` records the most
+ * recent authentication so a renamed user's display name stays current.
+ */
+export const users = sqliteTable('users', {
+  sub: text('sub').primaryKey(),
+  name: text('name').notNull(),
+  lastSeenAt: integer('last_seen_at').notNull(),
+});
+
 export const deviceEvents = sqliteTable(
   'device_events',
   {

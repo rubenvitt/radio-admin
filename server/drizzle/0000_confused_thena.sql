@@ -56,4 +56,9 @@ CREATE TABLE `software_versions` (
 	`created_by` text
 );
 --> statement-breakpoint
-CREATE UNIQUE INDEX `software_versions_value_unique` ON `software_versions` (`value`);
+CREATE UNIQUE INDEX `software_versions_value_unique` ON `software_versions` (`value`);--> statement-breakpoint
+CREATE TABLE `users` (
+	`sub` text PRIMARY KEY NOT NULL,
+	`name` text NOT NULL,
+	`last_seen_at` integer NOT NULL
+);
