@@ -22,6 +22,7 @@ const existing: DeviceRecord = {
   deviceModes: null,
   alamosIntegrated: null,
   loanable: null,
+  updateNote: null,
   createdAt: 1690000000000,
   updatedAt: 1690000000000,
   createdBy: 'seed',

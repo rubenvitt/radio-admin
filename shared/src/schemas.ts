@@ -36,6 +36,7 @@ export const deviceRecordSchema = z.object({
   deviceModes: z.string().nullable(),
   alamosIntegrated: z.boolean().nullable(),
   loanable: z.boolean().nullable(),
+  updateNote: z.string().nullable(),
   createdAt: z.number().int(),
   updatedAt: z.number().int(),
   createdBy: z.string().nullable(),
@@ -64,6 +65,7 @@ export const deviceCreateSchema = z
     deviceModes: z.string().nullable().optional(),
     alamosIntegrated: z.boolean().nullable().optional(),
     loanable: z.boolean().nullable().optional(),
+    updateNote: z.string().nullable().optional(),
   })
   .strip();
 
@@ -88,6 +90,7 @@ export const devicePatchSchema = z
     deviceModes: z.string().nullable().optional(),
     alamosIntegrated: z.boolean().nullable().optional(),
     loanable: z.boolean().nullable().optional(),
+    updateNote: z.string().nullable().optional(),
   })
   .strip();
 

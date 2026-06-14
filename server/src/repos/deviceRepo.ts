@@ -31,6 +31,7 @@ export function createDevice(db: Db, input: DeviceCreate, userId: string | null)
     deviceModes: input.deviceModes ?? null,
     alamosIntegrated: input.alamosIntegrated ?? null,
     loanable: input.loanable ?? null,
+    updateNote: input.updateNote ?? null,
     createdAt: now,
     updatedAt: now,
     createdBy: userId,
