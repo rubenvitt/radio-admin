@@ -11,3 +11,12 @@ test('toggles a column key and calls onChange', async () => {
   await user.click(await screen.findByText('Funktion'));
   expect(onChange).toHaveBeenCalledWith(expect.arrayContaining(['rufname', 'issi', 'funktion']));
 });
+
+test('stays open after a selection (closes only on outside click)', async () => {
+  const user = userEvent.setup();
+  render(<ColumnPicker value={['rufname', 'issi']} onChange={() => {}} />);
+  await user.click(screen.getByRole('button', { name: /Spalten/i }));
+  await user.click(await screen.findByText('Funktion'));
+  // The popup must still be open: another option remains in the document.
+  expect(screen.getByText('Lagerort')).toBeInTheDocument();
+});
