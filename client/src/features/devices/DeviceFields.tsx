@@ -172,13 +172,16 @@ export function DeviceFields({ lockedFor = () => false, updateStatusSlot }: Devi
             <Input.TextArea rows={3} disabled={lockedFor('notes')} />
           </Form.Item>
         </Col>
-        <Col xs={24}>
-          {/* Update-Anmerkung (Abweichungen). Admin-editierbar zum Abhaken/Leeren;
-              für Updater gesperrt — die hängen über das UpdateNotePanel an. */}
-          <Form.Item name="updateNote" label="Update-Anmerkung (Abweichungen)">
-            <Input.TextArea rows={3} disabled={lockedFor('updateNote')} />
-          </Form.Item>
-        </Col>
+        {/* Update-Anmerkung (Abweichungen): admin-editierbar zum Abhaken/Leeren.
+            Für Updater NICHT gerendert — die hängen über das UpdateNotePanel an
+            (so wird die Anmerkung nicht doppelt angezeigt). */}
+        {!lockedFor('updateNote') && (
+          <Col xs={24}>
+            <Form.Item name="updateNote" label="Update-Anmerkung (Abweichungen)">
+              <Input.TextArea rows={3} />
+            </Form.Item>
+          </Col>
+        )}
       </Row>
     </>
   );

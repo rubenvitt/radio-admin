@@ -29,10 +29,26 @@ const UPDATE_STATUS_OPTIONS: { value: UpdateStatus; label: string }[] = [
   { value: 'unbekannt', label: 'Unbekannt' },
 ];
 
-function SuggestSelect({ field, value, onChange, placeholder }: { field: SuggestionField; value?: string[]; onChange: (v: string[]) => void; placeholder: string }) {
+/** Multi-select bound to a suggestions source. `value`/`onChange` are wired to
+ *  the form field by the caller; `id` is forwarded so the rendered
+ *  `<label htmlFor>` reaches the control (accessibility + testability). */
+function SuggestSelect({
+  field,
+  placeholder,
+  value,
+  onChange,
+  id,
+}: {
+  field: SuggestionField;
+  placeholder: string;
+  value?: string[];
+  onChange: (v: string[]) => void;
+  id?: string;
+}) {
   const { data, isLoading } = useSuggestions(field);
   return (
     <Select
+      id={id}
       mode="multiple" allowClear loading={isLoading} placeholder={placeholder}
       value={value} onChange={onChange} style={{ width: '100%' }}
       options={(data ?? []).map((v) => ({ label: v, value: v }))}

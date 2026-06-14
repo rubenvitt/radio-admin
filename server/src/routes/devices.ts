@@ -169,8 +169,11 @@ export function deviceRoutes(db: Db) {
     if (!parsed.success) return c.json({ error: 'invalid', issues: parsed.error.issues }, 400);
 
     const user = c.get('user');
-    const line = appendUpdateNote('', parsed.data.text, user.name, new Date());
-    const nextNote = appendUpdateNote(existing.updateNote, parsed.data.text, user.name, new Date());
+    // One timestamp for both the appended note and its audit event so they can
+    // never diverge across a midnight-UTC boundary.
+    const now = new Date();
+    const line = appendUpdateNote('', parsed.data.text, user.name, now);
+    const nextNote = appendUpdateNote(existing.updateNote, parsed.data.text, user.name, now);
 
     const updated = db.transaction(() => {
       const u = updateDevice(db, id, { updateNote: nextNote }, user.sub)!;

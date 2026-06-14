@@ -67,7 +67,9 @@ export function DeviceEditForm({ device, role, onClose }: DeviceEditFormProps) {
       deviceModes: arrayToModes(values.deviceModes),
       alamosIntegrated: values.alamosIntegrated ?? null,
       loanable: values.loanable ?? null,
-      updateNote: values.updateNote ?? null,
+      // The updateNote field is only rendered for admins; when it's absent
+      // (updater) keep the stored value so the diff never touches it.
+      updateNote: values.updateNote === undefined ? device.updateNote : values.updateNote,
     };
 
     const patch: DevicePatch = {};

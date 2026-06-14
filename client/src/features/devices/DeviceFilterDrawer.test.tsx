@@ -31,3 +31,14 @@ test('Anwenden emits the chosen status filter', async () => {
   await user.click(screen.getByRole('button', { name: 'Anwenden' }));
   expect(onApply).toHaveBeenCalledWith(expect.objectContaining({ status: ['Wartung'] }));
 });
+
+test('seeded suggestion-backed filters render their selected values', async () => {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  render(
+    <QueryClientProvider client={client}>
+      <DeviceFilterDrawer open value={{ deviceType: ['MRT'] }} onClose={() => {}} onApply={() => {}} />
+    </QueryClientProvider>,
+  );
+  // The Gerät SuggestSelect (bound via Form.Item) shows the seeded value as a tag.
+  expect(await screen.findByText('MRT')).toBeInTheDocument();
+});
