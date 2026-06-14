@@ -165,7 +165,7 @@ export function listDevices(db: Db, params: ListParams): ListResult {
   return { rows, total, page, pageSize };
 }
 
-export type EventSource = 'manual' | 'csv-import' | 'create';
+export type EventSource = 'manual' | 'csv-import' | 'create' | 'update-note';
 
 /** Append one device_events row per diff. No-op for an empty diff list. */
 export function writeEvents(

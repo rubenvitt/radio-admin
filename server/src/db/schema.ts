@@ -80,7 +80,7 @@ export const deviceEvents = sqliteTable(
     newValue: text('new_value'),
     changedBy: text('changed_by'),
     changedAt: integer('changed_at').notNull(),
-    source: text('source', { enum: ['manual', 'csv-import', 'create'] }).notNull(),
+    source: text('source', { enum: ['manual', 'csv-import', 'create', 'update-note'] }).notNull(),
   },
   (table) => [index('device_events_device_id_idx').on(table.deviceId)],
 );

@@ -94,6 +94,12 @@ export const devicePatchSchema = z
   })
   .strip();
 
+// Update-Anmerkung append payload: non-empty text (trimmed).
+export const updateNoteSchema = z.object({
+  text: z.string().trim().min(1),
+});
+export type UpdateNoteInput = z.infer<typeof updateNoteSchema>;
+
 // CSV import commit: column->index mapping (issi mandatory), raw rows, dryRun flag.
 export const importCommitSchema = z.object({
   mapping: z

@@ -25,6 +25,7 @@ export {
   deviceCreateSchema,
   devicePatchSchema,
   importCommitSchema,
+  updateNoteSchema,
 } from './schemas';
 export type {
   DeviceRecord,
@@ -34,4 +35,5 @@ export type {
   SuggestionField,
   FieldDiff,
   ImportRowClass,
+  UpdateNoteInput,
 } from './schemas';
