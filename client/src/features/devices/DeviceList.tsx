@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
+  Badge,
   Button,
   Card,
   Grid,
   Input,
   List,
-  Select,
   Space,
   Table,
   Tag,
@@ -13,9 +13,8 @@ import {
 } from 'antd';
 import type { TablePaginationConfig } from 'antd/es/table';
 import type { FilterValue, SorterResult } from 'antd/es/table/interface';
-import { FiDownload, FiPlus } from 'react-icons/fi';
+import { FiAlertTriangle, FiDownload, FiFilter, FiPlus } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
-import { STATUS_OPTIONS, type UpdateStatus } from '@ra/shared';
 import { useAuth } from '../../auth/useAuth';
 import { UpdateStatusBadge } from '../../components/UpdateStatusBadge';
 import { useDevices, type DeviceListItem, type DeviceListParams } from '../../hooks/useDevices';
@@ -24,12 +23,7 @@ import { ColumnPicker } from './ColumnPicker';
 import { buildColumns, DEFAULT_VISIBLE_COLUMNS } from './deviceColumns';
 import { DeviceFormModal } from './DeviceFormModal';
 import { SearchFieldPicker, DEFAULT_SEARCH_FIELDS } from './SearchFieldPicker';
-
-const UPDATE_STATUS_OPTIONS: { value: UpdateStatus; label: string }[] = [
-  { value: 'aktuell', label: 'Aktuell' },
-  { value: 'veraltet', label: 'Veraltet' },
-  { value: 'unbekannt', label: 'Unbekannt' },
-];
+import { DeviceFilterDrawer, countActiveFilters, type DeviceFilters } from './DeviceFilterDrawer';
 
 const PAGE_SIZE = 20;
 
@@ -60,6 +54,14 @@ export function DeviceList({ initialParams }: DeviceListProps = {}) {
   );
   const columns = useMemo(() => buildColumns(visibleColumns), [visibleColumns]);
 
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [filters, setFilters] = useState<DeviceFilters>(() => ({
+    updateStatus: initialParams?.updateStatus,
+    status: initialParams?.status,
+    location: initialParams?.location,
+    deviceType: initialParams?.deviceType,
+  }));
+
   // Debounce the free-text search into the query param (resets to page 1).
   useEffect(() => {
     const handle = setTimeout(() => {
@@ -71,6 +73,25 @@ export function DeviceList({ initialParams }: DeviceListProps = {}) {
     }, 300);
     return () => clearTimeout(handle);
   }, [search, searchFields]);
+
+  // Push filters into params whenever they change. Map every filter key explicitly
+  // (not a spread) so that clearing a filter actually removes it from params.
+  useEffect(() => {
+    setParams((prev) => ({
+      ...prev,
+      updateStatus: filters.updateStatus,
+      status: filters.status,
+      location: filters.location,
+      deviceType: filters.deviceType,
+      funktion: filters.funktion,
+      hersteller: filters.hersteller,
+      deviceModes: filters.deviceModes,
+      loanable: filters.loanable,
+      alamosIntegrated: filters.alamosIntegrated,
+      hasUpdateNote: filters.hasUpdateNote,
+      page: 1,
+    }));
+  }, [filters]);
 
   const { data, isFetching } = useDevices(params);
   const rows = data?.rows ?? [];
@@ -120,26 +141,9 @@ export function DeviceList({ initialParams }: DeviceListProps = {}) {
           />
           <SearchFieldPicker value={searchFields} onChange={setSearchFields} />
         </Space.Compact>
-        <Select<UpdateStatus>
-          allowClear
-          placeholder="Update-Stand"
-          value={params.updateStatus}
-          options={UPDATE_STATUS_OPTIONS}
-          onChange={(value) =>
-            setParams((prev) => ({ ...prev, updateStatus: value ?? undefined, page: 1 }))
-          }
-          style={{ width: 180 }}
-        />
-        <Select<string>
-          allowClear
-          placeholder="Status"
-          value={params.status}
-          options={STATUS_OPTIONS.map((s) => ({ label: s, value: s }))}
-          onChange={(value) =>
-            setParams((prev) => ({ ...prev, status: value ?? undefined, page: 1 }))
-          }
-          style={{ width: 180 }}
-        />
+        <Badge count={countActiveFilters(filters)} size="small">
+          <Button icon={<FiFilter />} onClick={() => setFilterOpen(true)}>Filter</Button>
+        </Badge>
       </Space>
       <Space wrap>
         <ColumnPicker value={visibleColumns} onChange={setVisibleColumns} />
@@ -206,7 +210,19 @@ export function DeviceList({ initialParams }: DeviceListProps = {}) {
                     <UpdateStatusBadge status={device.updateStatus} />
                   </Space>
                   <Typography.Text type="secondary">ISSI: {device.issi}</Typography.Text>
-                  {device.location && <Tag>{device.location}</Tag>}
+                  {(device.funktion || device.deviceType) && (
+                    <Typography.Text type="secondary">
+                      {[device.funktion, device.deviceType].filter(Boolean).join(' · ')}
+                    </Typography.Text>
+                  )}
+                  <Space size={4} wrap>
+                    {device.location && <Tag>{device.location}</Tag>}
+                    {device.updateNote && (
+                      <Tag color="warning" icon={<FiAlertTriangle aria-label="Abweichung gemeldet" />}>
+                        Abweichung
+                      </Tag>
+                    )}
+                  </Space>
                 </Space>
               </Card>
             </List.Item>
@@ -214,6 +230,12 @@ export function DeviceList({ initialParams }: DeviceListProps = {}) {
         />
       )}
       {isAdmin && <DeviceFormModal open={createOpen} onClose={() => setCreateOpen(false)} />}
+      <DeviceFilterDrawer
+        open={filterOpen}
+        value={filters}
+        onClose={() => setFilterOpen(false)}
+        onApply={(next) => { setFilters(next); setFilterOpen(false); }}
+      />
     </Space>
   );
 }
