@@ -11,13 +11,14 @@ import {
   Typography,
   message,
 } from 'antd';
-import { FiTrash2 } from 'react-icons/fi';
+import { FiAlertTriangle, FiTrash2 } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
 import { ApiError } from '../../api/client';
 import { useAuth } from '../../auth/useAuth';
 import { useDevice } from '../../hooks/useDevice';
 import { useDeleteDevice } from '../../hooks/useDeleteDevice';
 import { DeviceEditForm } from './DeviceEditForm';
+import { UpdateNotePanel } from './UpdateNotePanel';
 
 export interface DeviceDetailDrawerProps {
   deviceId: string;
@@ -95,12 +96,21 @@ export function DeviceDetailDrawer({ deviceId }: DeviceDetailDrawerProps) {
               ? ` · ${device.updatedByName ?? device.updatedBy}`
               : ''}
           </Descriptions.Item>
+          {device.updateNote && (
+            <Descriptions.Item label="Abweichung">
+              <Tag color="warning" icon={<FiAlertTriangle aria-label="Abweichung gemeldet" />}>
+                gemeldet
+              </Tag>
+            </Descriptions.Item>
+          )}
         </Descriptions>
 
         <Typography.Title level={5} style={{ margin: 0 }}>
           Bearbeiten
         </Typography.Title>
         {role && <DeviceEditForm device={device} role={role} onClose={close} />}
+
+        {!isAdmin && <UpdateNotePanel deviceId={device.id} updateNote={device.updateNote} />}
 
         {isAdmin && (
           <Popconfirm

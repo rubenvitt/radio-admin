@@ -67,6 +67,7 @@ export function DeviceEditForm({ device, role, onClose }: DeviceEditFormProps) {
       deviceModes: arrayToModes(values.deviceModes),
       alamosIntegrated: values.alamosIntegrated ?? null,
       loanable: values.loanable ?? null,
+      updateNote: values.updateNote ?? null,
     };
 
     const patch: DevicePatch = {};
