@@ -1,4 +1,4 @@
-import { and, asc, count, desc, eq, like, or, sql, type SQL } from 'drizzle-orm';
+import { and, asc, count, desc, eq, inArray, isNotNull, like, ne, or, sql, type SQL } from 'drizzle-orm';
 import type { SQLiteColumn } from 'drizzle-orm/sqlite-core';
 import type { DbHandle } from '../db/index';
 import { newId } from '../db/id';
@@ -87,6 +87,13 @@ export interface ListParams {
   searchFields?: string;
   status?: string;
   location?: string;
+  deviceType?: string; // CSV -> IN
+  funktion?: string; // CSV -> IN
+  hersteller?: string; // CSV -> IN
+  deviceModes?: string; // CSV tokens -> AND of LIKE
+  loanable?: boolean;
+  alamosIntegrated?: boolean;
+  hasUpdateNote?: boolean;
   updateStatus?: UpdateStatus;
   sort?: string; // "field:asc" | "field:desc"
   page?: number; // 1-based
@@ -161,8 +168,21 @@ export function listDevices(db: Db, params: ListParams): ListResult {
       conds.push(sql`0`);
     }
   }
-  if (params.status) conds.push(eq(devices.status, params.status));
-  if (params.location) conds.push(eq(devices.location, params.location));
+  const inFilter = (col: SQLiteColumn, raw?: string) => {
+    const values = csv(raw);
+    if (values.length) conds.push(inArray(col, values));
+  };
+  inFilter(devices.status, params.status);
+  inFilter(devices.location, params.location);
+  inFilter(devices.deviceType, params.deviceType);
+  inFilter(devices.funktion, params.funktion);
+  inFilter(devices.hersteller, params.hersteller);
+  for (const token of csv(params.deviceModes)) {
+    conds.push(like(devices.deviceModes, `%${token}%`));
+  }
+  if (params.loanable) conds.push(eq(devices.loanable, true));
+  if (params.alamosIntegrated) conds.push(eq(devices.alamosIntegrated, true));
+  if (params.hasUpdateNote) conds.push(and(isNotNull(devices.updateNote), ne(devices.updateNote, '')) as SQL);
   if (params.updateStatus) conds.push(eq(statusExpr, params.updateStatus));
   const where = conds.length ? and(...conds) : undefined;
 
