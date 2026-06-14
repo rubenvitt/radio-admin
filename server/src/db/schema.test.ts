@@ -30,6 +30,7 @@ describe('schema: devices', () => {
         'deviceModes',
         'alamosIntegrated',
         'loanable',
+        'updateNote',
         'createdAt',
         'updatedAt',
         'createdBy',

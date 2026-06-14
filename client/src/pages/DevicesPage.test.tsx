@@ -14,9 +14,11 @@ function renderAt(url: string) {
       ? { rows: [], total: 0, page: 1, pageSize: 20 }
       : reqUrl.includes('/api/auth/me')
         ? { name: 'Admin', role: 'admin' }
-        : reqUrl.includes('/api/software-versions') || reqUrl.includes('/api/suggestions')
-          ? []
-          : {};
+        : reqUrl.includes('/api/suggestions')
+          ? { values: [] } // suggestions return an envelope, not a bare array
+          : reqUrl.includes('/api/software-versions')
+            ? []
+            : {};
     return Promise.resolve(
       new Response(JSON.stringify(body), {
         status: 200,
@@ -38,6 +40,7 @@ function renderAt(url: string) {
 }
 
 test('seeds the updateStatus filter from the URL query param', async () => {
+  const user = userEvent.setup();
   const spy = renderAt('/devices?updateStatus=veraltet');
 
   // The device-list query fires server-side with the URL filter applied.
@@ -48,11 +51,13 @@ test('seeds the updateStatus filter from the URL query param', async () => {
     expect(calledWithFilter).toBe(true);
   });
 
-  // The filter Select reflects the seeded value.
-  expect(screen.getByText('Veraltet')).toBeInTheDocument();
+  // The filter panel reflects the seeded value.
+  await user.click(screen.getByRole('button', { name: /Filter/i }));
+  expect(await screen.findByText('Veraltet')).toBeInTheDocument();
 });
 
 test('seeds the status filter from the URL query param', async () => {
+  const user = userEvent.setup();
   const spy = renderAt('/devices?status=Defekt');
 
   await waitFor(() => {
@@ -61,10 +66,11 @@ test('seeds the status filter from the URL query param', async () => {
     );
     expect(calledWithFilter).toBe(true);
   });
-  expect(screen.getByText('Defekt')).toBeInTheDocument();
+  await user.click(screen.getByRole('button', { name: /Filter/i }));
+  expect(await screen.findByText('Defekt')).toBeInTheDocument();
 });
 
-test('selecting a Status option updates the device-list query', async () => {
+test('applying a Status filter in the drawer updates the device-list query', async () => {
   const user = userEvent.setup();
   const spy = renderAt('/devices');
 
@@ -73,12 +79,11 @@ test('selecting a Status option updates the device-list query', async () => {
     expect(spy.mock.calls.some(([input]) => String(input).includes('/api/devices?'))).toBe(true);
   });
 
-  // Open the Status select (the 2nd combobox: Update-Stand then Status) and pick
-  // "Wartung". antd renders each Select trigger with role="combobox".
-  const comboboxes = screen.getAllByRole('combobox');
-  const statusCombobox = comboboxes.at(-1)!;
-  await user.click(statusCombobox);
+  // Open the filter drawer, pick a Status, apply.
+  await user.click(screen.getByRole('button', { name: /Filter/i }));
+  await user.click(await screen.findByLabelText('Status'));
   await user.click(await screen.findByText('Wartung'));
+  await user.click(screen.getByRole('button', { name: 'Anwenden' }));
 
   await waitFor(() => {
     const calledWithFilter = spy.mock.calls.some(

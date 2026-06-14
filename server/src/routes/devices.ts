@@ -5,6 +5,8 @@ import {
   devicePatchSchema,
   filterEditableFields,
   diffDevice,
+  appendUpdateNote,
+  updateNoteSchema,
   type UpdateStatus,
   type FieldDiff,
   type DeviceRecord,
@@ -43,8 +45,16 @@ export function deviceRoutes(db: Db) {
     const pageSize = safePositiveInt(qp.pageSize);
     const result = listDevices(db, {
       q: qp.q,
+      searchFields: qp.searchFields,
       status: qp.status,
       location: qp.location,
+      deviceType: qp.deviceType,
+      funktion: qp.funktion,
+      hersteller: qp.hersteller,
+      deviceModes: qp.deviceModes,
+      loanable: qp.loanable === '1',
+      alamosIntegrated: qp.alamosIntegrated === '1',
+      hasUpdateNote: qp.hasUpdateNote === '1',
       updateStatus: qp.updateStatus as UpdateStatus | undefined,
       sort: qp.sort,
       page,
@@ -139,6 +149,35 @@ export function deviceRoutes(db: Db) {
       }
       const u = updateDevice(db, id, allowed, user.sub)!;
       writeEvents(db, id, diffs, user.sub, 'manual');
+      return u;
+    });
+
+    const ref = getReferenceVersion(db);
+    return c.json({ ...updated, updateStatus: computeUpdateStatus(updated, ref) });
+  });
+
+  // Append-only Update-Anmerkung. Open to any authenticated role (admin &
+  // updater); append semantics are enforced server-side, never overwriting
+  // `notes` or existing updateNote lines.
+  r.post('/devices/:id/update-note', async (c) => {
+    const id = c.req.param('id');
+    const existing = getDeviceById(db, id);
+    if (!existing) return c.json({ error: 'not_found' }, 404);
+
+    const json = await c.req.json().catch(() => null);
+    const parsed = updateNoteSchema.safeParse(json);
+    if (!parsed.success) return c.json({ error: 'invalid', issues: parsed.error.issues }, 400);
+
+    const user = c.get('user');
+    // One timestamp for both the appended note and its audit event so they can
+    // never diverge across a midnight-UTC boundary.
+    const now = new Date();
+    const line = appendUpdateNote('', parsed.data.text, user.name, now);
+    const nextNote = appendUpdateNote(existing.updateNote, parsed.data.text, user.name, now);
+
+    const updated = db.transaction(() => {
+      const u = updateDevice(db, id, { updateNote: nextNote }, user.sub)!;
+      writeEvents(db, id, [{ field: 'updateNote', oldValue: existing.updateNote, newValue: line }], user.sub, 'update-note');
       return u;
     });
 

@@ -48,6 +48,7 @@ const device: DeviceListItem = {
   createdBy: null,
   updatedBy: null,
   updateStatus: 'aktuell',
+  updateNote: null,
 };
 
 function renderForm(role: Role) {

@@ -26,6 +26,10 @@ export const devices = sqliteTable('devices', {
   // Whether the device is available for loan; surfaced as a boolean via
   // { mode: 'boolean' }. MASTER DATA — never in UPDATER_EDITABLE_FIELDS.
   loanable: integer('loanable', { mode: 'boolean' }),
+  // Append-only Update-Anmerkung (ISSI-Abweichungen etc.). Separate from the
+  // admin master field `notes` — appended via POST /devices/:id/update-note,
+  // never overwritten by the update flow. Admin may edit/clear it (resolve).
+  updateNote: text('update_note'),
   createdAt: integer('created_at').notNull(),
   updatedAt: integer('updated_at').notNull(),
   createdBy: text('created_by'),
@@ -76,7 +80,7 @@ export const deviceEvents = sqliteTable(
     newValue: text('new_value'),
     changedBy: text('changed_by'),
     changedAt: integer('changed_at').notNull(),
-    source: text('source', { enum: ['manual', 'csv-import', 'create'] }).notNull(),
+    source: text('source', { enum: ['manual', 'csv-import', 'create', 'update-note'] }).notNull(),
   },
   (table) => [index('device_events_device_id_idx').on(table.deviceId)],
 );

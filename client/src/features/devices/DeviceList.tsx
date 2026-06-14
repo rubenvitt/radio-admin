@@ -1,31 +1,29 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
+  Badge,
   Button,
   Card,
   Grid,
   Input,
   List,
-  Select,
   Space,
   Table,
   Tag,
   Typography,
 } from 'antd';
-import type { ColumnsType, TablePaginationConfig } from 'antd/es/table';
+import type { TablePaginationConfig } from 'antd/es/table';
 import type { FilterValue, SorterResult } from 'antd/es/table/interface';
-import { FiCheck, FiDownload, FiPlus } from 'react-icons/fi';
+import { FiAlertTriangle, FiDownload, FiFilter, FiPlus } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
-import { STATUS_OPTIONS, type UpdateStatus } from '@ra/shared';
 import { useAuth } from '../../auth/useAuth';
 import { UpdateStatusBadge } from '../../components/UpdateStatusBadge';
 import { useDevices, type DeviceListItem, type DeviceListParams } from '../../hooks/useDevices';
+import { usePersistentState } from '../../hooks/usePersistentState';
+import { ColumnPicker } from './ColumnPicker';
+import { buildColumns, DEFAULT_VISIBLE_COLUMNS } from './deviceColumns';
 import { DeviceFormModal } from './DeviceFormModal';
-
-const UPDATE_STATUS_OPTIONS: { value: UpdateStatus; label: string }[] = [
-  { value: 'aktuell', label: 'Aktuell' },
-  { value: 'veraltet', label: 'Veraltet' },
-  { value: 'unbekannt', label: 'Unbekannt' },
-];
+import { SearchFieldPicker, DEFAULT_SEARCH_FIELDS } from './SearchFieldPicker';
+import { DeviceFilterDrawer, countActiveFilters, type DeviceFilters } from './DeviceFilterDrawer';
 
 const PAGE_SIZE = 20;
 
@@ -48,17 +46,52 @@ export function DeviceList({ initialParams }: DeviceListProps = {}) {
   });
   const [search, setSearch] = useState(initialParams?.q ?? '');
 
+  const [visibleColumns, setVisibleColumns] = usePersistentState<string[]>(
+    'ra-device-columns', DEFAULT_VISIBLE_COLUMNS,
+  );
+  const [searchFields, setSearchFields] = usePersistentState<string[]>(
+    'ra-device-search-fields', DEFAULT_SEARCH_FIELDS,
+  );
+  const columns = useMemo(() => buildColumns(visibleColumns), [visibleColumns]);
+
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [filters, setFilters] = useState<DeviceFilters>(() => ({
+    updateStatus: initialParams?.updateStatus,
+    status: initialParams?.status,
+    location: initialParams?.location,
+    deviceType: initialParams?.deviceType,
+  }));
+
   // Debounce the free-text search into the query param (resets to page 1).
   useEffect(() => {
     const handle = setTimeout(() => {
       setParams((prev) => {
         const next = search.trim() || undefined;
-        if (prev.q === next) return prev;
-        return { ...prev, q: next, page: 1 };
+        if (prev.q === next && prev.searchFields === searchFields) return prev;
+        return { ...prev, q: next, searchFields, page: 1 };
       });
     }, 300);
     return () => clearTimeout(handle);
-  }, [search]);
+  }, [search, searchFields]);
+
+  // Push filters into params whenever they change. Map every filter key explicitly
+  // (not a spread) so that clearing a filter actually removes it from params.
+  useEffect(() => {
+    setParams((prev) => ({
+      ...prev,
+      updateStatus: filters.updateStatus,
+      status: filters.status,
+      location: filters.location,
+      deviceType: filters.deviceType,
+      funktion: filters.funktion,
+      hersteller: filters.hersteller,
+      deviceModes: filters.deviceModes,
+      loanable: filters.loanable,
+      alamosIntegrated: filters.alamosIntegrated,
+      hasUpdateNote: filters.hasUpdateNote,
+      page: 1,
+    }));
+  }, [filters]);
 
   const { data, isFetching } = useDevices(params);
   const rows = data?.rows ?? [];
@@ -76,45 +109,6 @@ export function DeviceList({ initialParams }: DeviceListProps = {}) {
     anchor.click();
     anchor.remove();
   };
-
-  const columns = useMemo<ColumnsType<DeviceListItem>>(
-    () => [
-      {
-        title: 'OPTA / Rufname',
-        key: 'rufname',
-        sorter: true,
-        render: (_, d) => d.opta || d.rufname || '—',
-      },
-      { title: 'ISSI', dataIndex: 'issi', key: 'issi', sorter: true },
-      {
-        title: 'Update-Stand',
-        key: 'updateStatus',
-        sorter: true,
-        render: (_, d) => <UpdateStatusBadge status={d.updateStatus} />,
-      },
-      { title: 'Status', dataIndex: 'status', key: 'status', sorter: true },
-      { title: 'Lagerort', dataIndex: 'location', key: 'location', sorter: true },
-      { title: 'Hersteller', dataIndex: 'hersteller', key: 'hersteller' },
-      { title: 'Gerät', dataIndex: 'deviceType', key: 'deviceType' },
-      {
-        title: 'Alamos',
-        key: 'alamosIntegrated',
-        align: 'center',
-        render: (_, d) =>
-          d.alamosIntegrated ? <FiCheck aria-label="Alamos integriert" /> : null,
-      },
-      {
-        // "Letztes Update" shows softwareVersion (spec §3), so sort by it too —
-        // the column key must match the displayed dataIndex, not lastUpdatedAt.
-        title: 'Letztes Update',
-        dataIndex: 'softwareVersion',
-        key: 'softwareVersion',
-        sorter: true,
-        render: (value: string | null) => value || '—',
-      },
-    ],
-    [],
-  );
 
   // Map antd Table change events into server-side query params.
   const handleTableChange = (
@@ -138,44 +132,32 @@ export function DeviceList({ initialParams }: DeviceListProps = {}) {
   const toolbar = (
     <Space wrap style={{ width: '100%', justifyContent: 'space-between' }}>
       <Space wrap>
-        <Input.Search
-          allowClear
-          placeholder="Suche (Rufname, ISSI, Seriennummer, Zuordnung)"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          style={{ width: 320, maxWidth: '100%' }}
-        />
-        <Select<UpdateStatus>
-          allowClear
-          placeholder="Update-Stand"
-          value={params.updateStatus}
-          options={UPDATE_STATUS_OPTIONS}
-          onChange={(value) =>
-            setParams((prev) => ({ ...prev, updateStatus: value ?? undefined, page: 1 }))
-          }
-          style={{ width: 180 }}
-        />
-        <Select<string>
-          allowClear
-          placeholder="Status"
-          value={params.status}
-          options={STATUS_OPTIONS.map((s) => ({ label: s, value: s }))}
-          onChange={(value) =>
-            setParams((prev) => ({ ...prev, status: value ?? undefined, page: 1 }))
-          }
-          style={{ width: 180 }}
-        />
+        <Space.Compact style={{ width: 360, maxWidth: '100%' }}>
+          <Input.Search
+            allowClear
+            placeholder="Suche…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+          <SearchFieldPicker value={searchFields} onChange={setSearchFields} />
+        </Space.Compact>
+        <Badge count={countActiveFilters(filters)} size="small">
+          <Button icon={<FiFilter />} onClick={() => setFilterOpen(true)}>Filter</Button>
+        </Badge>
       </Space>
-      {isAdmin && (
-        <Space wrap>
-          <Button icon={<FiDownload />} onClick={handleExport}>
-            Exportieren
-          </Button>
-          <Button type="primary" icon={<FiPlus />} onClick={() => setCreateOpen(true)}>
-            Gerät anlegen
-          </Button>
-        </Space>
-      )}
+      <Space wrap>
+        <ColumnPicker value={visibleColumns} onChange={setVisibleColumns} />
+        {isAdmin && (
+          <>
+            <Button icon={<FiDownload />} onClick={handleExport}>
+              Exportieren
+            </Button>
+            <Button type="primary" icon={<FiPlus />} onClick={() => setCreateOpen(true)}>
+              Gerät anlegen
+            </Button>
+          </>
+        )}
+      </Space>
     </Space>
   );
 
@@ -228,7 +210,19 @@ export function DeviceList({ initialParams }: DeviceListProps = {}) {
                     <UpdateStatusBadge status={device.updateStatus} />
                   </Space>
                   <Typography.Text type="secondary">ISSI: {device.issi}</Typography.Text>
-                  {device.location && <Tag>{device.location}</Tag>}
+                  {(device.funktion || device.deviceType) && (
+                    <Typography.Text type="secondary">
+                      {[device.funktion, device.deviceType].filter(Boolean).join(' · ')}
+                    </Typography.Text>
+                  )}
+                  <Space size={4} wrap>
+                    {device.location && <Tag>{device.location}</Tag>}
+                    {device.updateNote && (
+                      <Tag color="warning" icon={<FiAlertTriangle aria-label="Abweichung gemeldet" />}>
+                        Abweichung
+                      </Tag>
+                    )}
+                  </Space>
                 </Space>
               </Card>
             </List.Item>
@@ -236,6 +230,12 @@ export function DeviceList({ initialParams }: DeviceListProps = {}) {
         />
       )}
       {isAdmin && <DeviceFormModal open={createOpen} onClose={() => setCreateOpen(false)} />}
+      <DeviceFilterDrawer
+        open={filterOpen}
+        value={filters}
+        onClose={() => setFilterOpen(false)}
+        onApply={(next) => { setFilters(next); setFilterOpen(false); }}
+      />
     </Space>
   );
 }

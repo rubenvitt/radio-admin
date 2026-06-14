@@ -8,6 +8,7 @@ import { ImportPage } from '../pages/ImportPage';
 import { LoginPage } from '../pages/LoginPage';
 import { NotFoundPage } from '../pages/NotFoundPage';
 import { SettingsPage } from '../pages/SettingsPage';
+import { UpdatePage } from '../pages/UpdatePage';
 
 export const routes: RouteObject[] = [
   { path: '/login', element: <LoginPage /> },
@@ -22,6 +23,7 @@ export const routes: RouteObject[] = [
       { path: '/', element: <DashboardPage /> },
       { path: '/devices', element: <DevicesPage /> },
       { path: '/devices/:id', element: <DevicesPage /> },
+      { path: '/update', element: <UpdatePage /> },
       { path: '/import', element: <ImportPage /> },
       { path: '/einstellungen', element: <SettingsPage /> },
     ],

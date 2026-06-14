@@ -11,6 +11,37 @@ function wrapper({ children }: { children: ReactNode }) {
   return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
 }
 
+test('encodes searchFields and the new filters', async () => {
+  const spy = vi.spyOn(global, 'fetch').mockResolvedValue(
+    new Response(JSON.stringify({ rows: [], total: 0, page: 1, pageSize: 20 }), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    }),
+  );
+  renderHook(
+    () =>
+      useDevices({
+        page: 1,
+        pageSize: 20,
+        searchFields: ['issi', 'opta'],
+        deviceType: ['MRT', 'HRT'],
+        status: ['Wartung'],
+        deviceModes: ['TMO'],
+        loanable: true,
+        hasUpdateNote: true,
+      }),
+    { wrapper },
+  );
+  await waitFor(() => expect(spy).toHaveBeenCalled());
+  const url = spy.mock.calls[0]?.[0] as string;
+  expect(url).toContain('searchFields=issi%2Copta');
+  expect(url).toContain('deviceType=MRT%2CHRT');
+  expect(url).toContain('status=Wartung');
+  expect(url).toContain('deviceModes=TMO');
+  expect(url).toContain('loanable=1');
+  expect(url).toContain('hasUpdateNote=1');
+});
+
 test('fetches the paged device list with encoded params', async () => {
   const spy = vi.spyOn(global, 'fetch').mockResolvedValue(
     new Response(

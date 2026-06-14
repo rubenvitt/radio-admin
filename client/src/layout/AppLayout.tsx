@@ -7,6 +7,7 @@ import {
   FiMenu,
   FiMoon,
   FiRadio,
+  FiRefreshCw,
   FiSun,
   FiUpload,
 } from 'react-icons/fi';
@@ -28,6 +29,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   { key: '/', label: 'Dashboard', icon: <FiGrid /> },
   { key: '/devices', label: 'Geräte', icon: <FiRadio /> },
+  { key: '/update', label: 'Update-Modus', icon: <FiRefreshCw /> },
   { key: '/import', label: 'Import', icon: <FiUpload /> },
   { key: '/einstellungen', label: 'API-Zugriff', icon: <FiKey />, adminOnly: true },
 ];

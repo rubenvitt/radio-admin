@@ -30,7 +30,12 @@ export function DevicesPage() {
       */}
       <DeviceList
         key={searchParams.toString()}
-        initialParams={{ updateStatus, q, status, location }}
+        initialParams={{
+          updateStatus,
+          q,
+          status: status ? [status] : undefined,
+          location: location ? [location] : undefined,
+        }}
       />
       {id && <DeviceDetailDrawer deviceId={id} />}
     </>

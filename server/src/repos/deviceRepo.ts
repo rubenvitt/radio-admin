@@ -1,4 +1,4 @@
-import { and, asc, count, desc, eq, like, or, sql, type SQL } from 'drizzle-orm';
+import { and, asc, count, desc, eq, inArray, isNotNull, like, ne, or, sql, type SQL } from 'drizzle-orm';
 import type { SQLiteColumn } from 'drizzle-orm/sqlite-core';
 import type { DbHandle } from '../db/index';
 import { newId } from '../db/id';
@@ -31,6 +31,7 @@ export function createDevice(db: Db, input: DeviceCreate, userId: string | null)
     deviceModes: input.deviceModes ?? null,
     alamosIntegrated: input.alamosIntegrated ?? null,
     loanable: input.loanable ?? null,
+    updateNote: input.updateNote ?? null,
     createdAt: now,
     updatedAt: now,
     createdBy: userId,
@@ -83,8 +84,16 @@ export function updateDevice(
 
 export interface ListParams {
   q?: string;
+  searchFields?: string;
   status?: string;
   location?: string;
+  deviceType?: string; // CSV -> IN
+  funktion?: string; // CSV -> IN
+  hersteller?: string; // CSV -> IN
+  deviceModes?: string; // CSV tokens -> AND of LIKE
+  loanable?: boolean;
+  alamosIntegrated?: boolean;
+  hasUpdateNote?: boolean;
   updateStatus?: UpdateStatus;
   sort?: string; // "field:asc" | "field:desc"
   page?: number; // 1-based
@@ -110,6 +119,28 @@ const SORTABLE: Record<string, SQLiteColumn> = {
   createdAt: devices.createdAt,
 };
 
+/** Columns the free-text search may target. Field names map to columns here —
+ *  NEVER interpolate a client-supplied name into SQL. */
+const SEARCHABLE_FIELDS: Record<string, SQLiteColumn> = {
+  rufname: devices.rufname,
+  issi: devices.issi,
+  serialNumber: devices.serialNumber,
+  assignedTo: devices.assignedTo,
+  opta: devices.opta,
+  funktion: devices.funktion,
+  deviceType: devices.deviceType,
+  location: devices.location,
+  hersteller: devices.hersteller,
+  bedieneinheit: devices.bedieneinheit,
+  hiorgId: devices.hiorgId,
+};
+const DEFAULT_SEARCH_FIELDS = ['rufname', 'issi', 'serialNumber', 'assignedTo', 'opta', 'funktion'];
+
+/** Split a comma-separated query param into trimmed, non-empty tokens. */
+function csv(v?: string): string[] {
+  return v ? v.split(',').map((s) => s.trim()).filter(Boolean) : [];
+}
+
 export function listDevices(db: Db, params: ListParams): ListResult {
   const ref = getReferenceVersion(db); // string | null
   // SQL expression mirroring computeUpdateStatus(device, ref):
@@ -124,16 +155,34 @@ export function listDevices(db: Db, params: ListParams): ListResult {
   const conds: SQL[] = [];
   if (params.q) {
     const term = `%${params.q}%`;
-    const orExpr = or(
-      like(devices.rufname, term),
-      like(devices.issi, term),
-      like(devices.serialNumber, term),
-      like(devices.assignedTo, term),
-    );
-    if (orExpr) conds.push(orExpr);
+    const requested = csv(params.searchFields);
+    const fields = (requested.length ? requested : DEFAULT_SEARCH_FIELDS)
+      .map((f) => SEARCHABLE_FIELDS[f])
+      .filter((col): col is SQLiteColumn => col != null);
+    if (fields.length) {
+      const orExpr = or(...fields.map((col) => like(col, term)));
+      if (orExpr) conds.push(orExpr);
+    } else if (requested.length) {
+      // All requested fields were non-whitelisted: return no rows (never
+      // interpolate unknown names into SQL).
+      conds.push(sql`0`);
+    }
   }
-  if (params.status) conds.push(eq(devices.status, params.status));
-  if (params.location) conds.push(eq(devices.location, params.location));
+  const inFilter = (col: SQLiteColumn, raw?: string) => {
+    const values = csv(raw);
+    if (values.length) conds.push(inArray(col, values));
+  };
+  inFilter(devices.status, params.status);
+  inFilter(devices.location, params.location);
+  inFilter(devices.deviceType, params.deviceType);
+  inFilter(devices.funktion, params.funktion);
+  inFilter(devices.hersteller, params.hersteller);
+  for (const token of csv(params.deviceModes)) {
+    conds.push(like(devices.deviceModes, `%${token}%`));
+  }
+  if (params.loanable) conds.push(eq(devices.loanable, true));
+  if (params.alamosIntegrated) conds.push(eq(devices.alamosIntegrated, true));
+  if (params.hasUpdateNote) conds.push(and(isNotNull(devices.updateNote), ne(devices.updateNote, '')) as SQL);
   if (params.updateStatus) conds.push(eq(statusExpr, params.updateStatus));
   const where = conds.length ? and(...conds) : undefined;
 
@@ -164,7 +213,7 @@ export function listDevices(db: Db, params: ListParams): ListResult {
   return { rows, total, page, pageSize };
 }
 
-export type EventSource = 'manual' | 'csv-import' | 'create';
+export type EventSource = 'manual' | 'csv-import' | 'create' | 'update-note';
 
 /** Append one device_events row per diff. No-op for an empty diff list. */
 export function writeEvents(

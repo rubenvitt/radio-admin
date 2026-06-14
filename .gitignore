@@ -10,3 +10,4 @@ data/
 *.sqlite-journal
 coverage/
 .vite/
+.superpowers/

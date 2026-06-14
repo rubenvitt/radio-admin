@@ -11,6 +11,8 @@ export { UPDATER_EDITABLE_FIELDS, filterEditableFields } from './editable-fields
 
 export { diffDevice } from './diff-device';
 
+export { appendUpdateNote } from './update-note';
+
 export { classifyImportRow } from './import/classify-import-row';
 export type { ClassifyResult } from './import/classify-import-row';
 
@@ -23,6 +25,7 @@ export {
   deviceCreateSchema,
   devicePatchSchema,
   importCommitSchema,
+  updateNoteSchema,
 } from './schemas';
 export type {
   DeviceRecord,
@@ -32,4 +35,5 @@ export type {
   SuggestionField,
   FieldDiff,
   ImportRowClass,
+  UpdateNoteInput,
 } from './schemas';

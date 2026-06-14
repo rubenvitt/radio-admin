@@ -36,6 +36,7 @@ export const deviceRecordSchema = z.object({
   deviceModes: z.string().nullable(),
   alamosIntegrated: z.boolean().nullable(),
   loanable: z.boolean().nullable(),
+  updateNote: z.string().nullable(),
   createdAt: z.number().int(),
   updatedAt: z.number().int(),
   createdBy: z.string().nullable(),
@@ -64,6 +65,7 @@ export const deviceCreateSchema = z
     deviceModes: z.string().nullable().optional(),
     alamosIntegrated: z.boolean().nullable().optional(),
     loanable: z.boolean().nullable().optional(),
+    updateNote: z.string().nullable().optional(),
   })
   .strip();
 
@@ -88,8 +90,15 @@ export const devicePatchSchema = z
     deviceModes: z.string().nullable().optional(),
     alamosIntegrated: z.boolean().nullable().optional(),
     loanable: z.boolean().nullable().optional(),
+    updateNote: z.string().nullable().optional(),
   })
   .strip();
+
+// Update-Anmerkung append payload: non-empty text (trimmed).
+export const updateNoteSchema = z.object({
+  text: z.string().trim().min(1),
+});
+export type UpdateNoteInput = z.infer<typeof updateNoteSchema>;
 
 // CSV import commit: column->index mapping (issi mandatory), raw rows, dryRun flag.
 export const importCommitSchema = z.object({
