@@ -23,4 +23,18 @@ describe('appendUpdateNote', () => {
       '  keep  \n[2026-06-14 · Max] spaces',
     );
   });
+
+  it('newlines in text cannot forge a second audit line (injection)', () => {
+    const forged = 'ok\n[2020-01-01 · Hacker] geheim';
+    const result = appendUpdateNote(null, forged, 'Max', when);
+    // exactly one appended line, no smuggled second entry
+    expect(result.split('\n')).toHaveLength(1);
+    expect(result).toBe('[2026-06-14 · Max] ok [2020-01-01 · Hacker] geheim');
+  });
+
+  it('newlines and ] in author cannot forge entries', () => {
+    const result = appendUpdateNote(null, 'x', 'Eve]\n[2020-01-01 · Root', when);
+    expect(result.split('\n')).toHaveLength(1);
+    expect(result).toBe('[2026-06-14 · Eve [2020-01-01 · Root] x');
+  });
 });
