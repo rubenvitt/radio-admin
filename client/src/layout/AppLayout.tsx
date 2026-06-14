@@ -1,4 +1,4 @@
-import { Button, Drawer, Grid, Layout, Menu, Space, Typography, theme } from 'antd';
+import { Button, Drawer, Grid, Layout, Menu, Tooltip, Typography, theme } from 'antd';
 import { useState, type ReactNode } from 'react';
 import {
   FiGrid,
@@ -42,6 +42,26 @@ async function logout() {
   }
 }
 
+/** Logo + wordmark. Text color follows the theme (no hard-coded colour). */
+function Brand({ collapsed = false }: { collapsed?: boolean }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+      <img
+        src="/logo.png"
+        alt="radio-admin Logo"
+        width={28}
+        height={28}
+        style={{ borderRadius: 6, flexShrink: 0 }}
+      />
+      {!collapsed && (
+        <Typography.Text strong style={{ fontSize: 16, whiteSpace: 'nowrap' }}>
+          radio-admin
+        </Typography.Text>
+      )}
+    </div>
+  );
+}
+
 export function AppLayout() {
   const screens = Grid.useBreakpoint();
   const isMobile = !screens.md;
@@ -50,17 +70,20 @@ export function AppLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
   const {
-    token: { colorBgContainer },
+    token: { colorBgContainer, colorBorderSecondary },
   } = theme.useToken();
+  const dark = mode === 'dark';
 
   const visibleNavItems = navItems.filter((item) => !item.adminOnly || isAdmin);
 
   const menu = (
     <Menu
       mode="inline"
-      theme={mode === 'dark' ? 'dark' : 'light'}
+      theme={dark ? 'dark' : 'light'}
       selectedKeys={[location.pathname]}
+      style={{ borderInlineEnd: 'none' }}
       items={visibleNavItems.map((item) => ({
         key: item.key,
         icon: item.icon,
@@ -73,30 +96,59 @@ export function AppLayout() {
     />
   );
 
+  // Right-aligned header controls. A flex row (not antd Space) with
+  // flex-shrink:0 so the username never wraps under the buttons.
+  const headerActions = (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+      <Tooltip title={dark ? 'Helles Design' : 'Dunkles Design'}>
+        <Button
+          type="text"
+          aria-label={dark ? 'Helles Design' : 'Dunkles Design'}
+          icon={dark ? <FiSun /> : <FiMoon />}
+          onClick={toggle}
+        />
+      </Tooltip>
+      {!isMobile && user && (
+        <Typography.Text style={{ maxWidth: 180, whiteSpace: 'nowrap' }} ellipsis>
+          {user.name}
+        </Typography.Text>
+      )}
+      <Button
+        type="text"
+        aria-label="Abmelden"
+        icon={<FiLogOut />}
+        onClick={() => {
+          void logout();
+        }}
+      >
+        {!isMobile && 'Abmelden'}
+      </Button>
+    </div>
+  );
+
   return (
     <Layout style={{ minHeight: '100vh' }}>
       {!isMobile && (
-        <Sider collapsible breakpoint="lg" theme={mode === 'dark' ? 'dark' : 'light'}>
+        <Sider
+          collapsible
+          collapsed={collapsed}
+          onCollapse={setCollapsed}
+          breakpoint="lg"
+          width={220}
+          theme={dark ? 'dark' : 'light'}
+          style={{ borderInlineEnd: `1px solid ${colorBorderSecondary}` }}
+        >
           <div
             style={{
-              height: 48,
-              margin: 8,
+              height: 64,
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center',
-              gap: 8,
-              color: mode === 'dark' ? '#fff' : undefined,
-              fontWeight: 600,
+              justifyContent: collapsed ? 'center' : 'flex-start',
+              padding: collapsed ? 0 : '0 16px',
+              overflow: 'hidden',
             }}
           >
-            <img
-              src="/logo.png"
-              alt="radio-admin Logo"
-              width={28}
-              height={28}
-              style={{ borderRadius: 6, flexShrink: 0 }}
-            />
-            radio-admin
+            <Brand collapsed={collapsed} />
           </div>
           {menu}
         </Sider>
@@ -108,56 +160,33 @@ export function AppLayout() {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
+            gap: 12,
             padding: '0 16px',
+            height: 64,
+            lineHeight: 'normal',
             background: colorBgContainer,
+            borderBottom: `1px solid ${colorBorderSecondary}`,
+            position: 'sticky',
+            top: 0,
+            zIndex: 10,
           }}
         >
-          <Space>
+          {/* Left: brand + hamburger on mobile; empty on desktop (the Sider
+              already carries the brand, so we don't duplicate it here). */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
             {isMobile && (
-              <Button
-                type="text"
-                aria-label="Menü öffnen"
-                icon={<FiMenu />}
-                onClick={() => setDrawerOpen(true)}
-              />
+              <>
+                <Button
+                  type="text"
+                  aria-label="Menü öffnen"
+                  icon={<FiMenu />}
+                  onClick={() => setDrawerOpen(true)}
+                />
+                <Brand />
+              </>
             )}
-            <img
-              src="/logo.png"
-              alt="radio-admin Logo"
-              width={32}
-              height={32}
-              style={{ borderRadius: 7, flexShrink: 0 }}
-            />
-            {!isMobile && (
-              <Typography.Title level={4} style={{ margin: 0 }}>
-                radio-admin
-              </Typography.Title>
-            )}
-          </Space>
-
-          <Space>
-            <Button
-              type="text"
-              aria-label={mode === 'dark' ? 'Helles Design' : 'Dunkles Design'}
-              icon={mode === 'dark' ? <FiSun /> : <FiMoon />}
-              onClick={toggle}
-            />
-            {!isMobile && user && (
-              <Typography.Text style={{ maxWidth: 200 }} ellipsis>
-                {user.name}
-              </Typography.Text>
-            )}
-            <Button
-              type="text"
-              aria-label="Abmelden"
-              icon={<FiLogOut />}
-              onClick={() => {
-                void logout();
-              }}
-            >
-              {!isMobile && 'Abmelden'}
-            </Button>
-          </Space>
+          </div>
+          {headerActions}
         </Header>
 
         <Content style={{ margin: 16 }}>
@@ -167,11 +196,19 @@ export function AppLayout() {
 
       {isMobile && (
         <Drawer
-          title={user?.name ?? 'Navigation'}
+          title={<Brand />}
           placement="left"
           open={drawerOpen}
           onClose={() => setDrawerOpen(false)}
+          width={260}
           styles={{ body: { padding: 0 } }}
+          footer={
+            user ? (
+              <Typography.Text type="secondary" ellipsis style={{ display: 'block' }}>
+                {user.name}
+              </Typography.Text>
+            ) : undefined
+          }
         >
           {menu}
         </Drawer>
