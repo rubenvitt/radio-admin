@@ -1,5 +1,6 @@
-import { Button, Checkbox, Dropdown } from 'antd';
+import { Button } from 'antd';
 import { FiSliders } from 'react-icons/fi';
+import { CheckboxDropdown } from './CheckboxDropdown';
 
 export const SEARCH_FIELD_OPTIONS: { key: string; label: string }[] = [
   { key: 'rufname', label: 'Rufname' },
@@ -22,29 +23,15 @@ export interface SearchFieldPickerProps {
   onChange: (next: string[]) => void;
 }
 
+/** Dropdown of checkboxes choosing which fields the search targets. Stays open
+ *  while toggling — closes only on an outside click. */
 export function SearchFieldPicker({ value, onChange }: SearchFieldPickerProps) {
-  const selected = new Set(value);
-  const toggle = (key: string, checked: boolean) => {
-    const next = new Set(selected);
-    if (checked) next.add(key);
-    else next.delete(key);
-    onChange(SEARCH_FIELD_OPTIONS.filter((o) => next.has(o.key)).map((o) => o.key));
-  };
   return (
-    <Dropdown
-      trigger={['click']}
-      menu={{
-        items: SEARCH_FIELD_OPTIONS.map((o) => ({
-          key: o.key,
-          label: (
-            <Checkbox checked={selected.has(o.key)} onChange={(e) => toggle(o.key, e.target.checked)}>
-              {o.label}
-            </Checkbox>
-          ),
-        })),
-      }}
-    >
-      <Button icon={<FiSliders />} aria-label="Suchfelder" />
-    </Dropdown>
+    <CheckboxDropdown
+      options={SEARCH_FIELD_OPTIONS}
+      value={value}
+      onChange={onChange}
+      button={<Button icon={<FiSliders />} aria-label="Suchfelder" />}
+    />
   );
 }
