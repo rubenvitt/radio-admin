@@ -6,9 +6,17 @@ export type DeviceListItem = DeviceRecord & { updateStatus: UpdateStatus };
 
 export interface DeviceListParams {
   q?: string;
-  status?: string;
-  location?: string;
+  searchFields?: string[];
   updateStatus?: UpdateStatus;
+  status?: string[];
+  location?: string[];
+  deviceType?: string[];
+  funktion?: string[];
+  hersteller?: string[];
+  deviceModes?: string[];
+  loanable?: boolean;
+  alamosIntegrated?: boolean;
+  hasUpdateNote?: boolean;
   sort?: string;
   page: number;
   pageSize: number;
@@ -29,9 +37,20 @@ export interface DeviceListResponse {
 export function toDeviceQueryString(params: DeviceListParams): string {
   const sp = new URLSearchParams();
   if (params.q) sp.set('q', params.q);
-  if (params.status) sp.set('status', params.status);
-  if (params.location) sp.set('location', params.location);
+  const csv = (key: string, arr?: string[]) => {
+    if (arr && arr.length) sp.set(key, arr.join(','));
+  };
+  csv('searchFields', params.searchFields);
+  csv('status', params.status);
+  csv('location', params.location);
+  csv('deviceType', params.deviceType);
+  csv('funktion', params.funktion);
+  csv('hersteller', params.hersteller);
+  csv('deviceModes', params.deviceModes);
   if (params.updateStatus) sp.set('updateStatus', params.updateStatus);
+  if (params.loanable) sp.set('loanable', '1');
+  if (params.alamosIntegrated) sp.set('alamosIntegrated', '1');
+  if (params.hasUpdateNote) sp.set('hasUpdateNote', '1');
   if (params.sort) sp.set('sort', params.sort);
   sp.set('page', String(params.page));
   sp.set('pageSize', String(params.pageSize));
