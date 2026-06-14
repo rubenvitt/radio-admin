@@ -45,6 +45,7 @@ export function deviceRoutes(db: Db) {
     const pageSize = safePositiveInt(qp.pageSize);
     const result = listDevices(db, {
       q: qp.q,
+      searchFields: qp.searchFields,
       status: qp.status,
       location: qp.location,
       updateStatus: qp.updateStatus as UpdateStatus | undefined,

@@ -84,6 +84,7 @@ export function updateDevice(
 
 export interface ListParams {
   q?: string;
+  searchFields?: string;
   status?: string;
   location?: string;
   updateStatus?: UpdateStatus;
@@ -111,6 +112,28 @@ const SORTABLE: Record<string, SQLiteColumn> = {
   createdAt: devices.createdAt,
 };
 
+/** Columns the free-text search may target. Field names map to columns here —
+ *  NEVER interpolate a client-supplied name into SQL. */
+const SEARCHABLE_FIELDS: Record<string, SQLiteColumn> = {
+  rufname: devices.rufname,
+  issi: devices.issi,
+  serialNumber: devices.serialNumber,
+  assignedTo: devices.assignedTo,
+  opta: devices.opta,
+  funktion: devices.funktion,
+  deviceType: devices.deviceType,
+  location: devices.location,
+  hersteller: devices.hersteller,
+  bedieneinheit: devices.bedieneinheit,
+  hiorgId: devices.hiorgId,
+};
+const DEFAULT_SEARCH_FIELDS = ['rufname', 'issi', 'serialNumber', 'assignedTo', 'opta', 'funktion'];
+
+/** Split a comma-separated query param into trimmed, non-empty tokens. */
+function csv(v?: string): string[] {
+  return v ? v.split(',').map((s) => s.trim()).filter(Boolean) : [];
+}
+
 export function listDevices(db: Db, params: ListParams): ListResult {
   const ref = getReferenceVersion(db); // string | null
   // SQL expression mirroring computeUpdateStatus(device, ref):
@@ -125,13 +148,18 @@ export function listDevices(db: Db, params: ListParams): ListResult {
   const conds: SQL[] = [];
   if (params.q) {
     const term = `%${params.q}%`;
-    const orExpr = or(
-      like(devices.rufname, term),
-      like(devices.issi, term),
-      like(devices.serialNumber, term),
-      like(devices.assignedTo, term),
-    );
-    if (orExpr) conds.push(orExpr);
+    const requested = csv(params.searchFields);
+    const fields = (requested.length ? requested : DEFAULT_SEARCH_FIELDS)
+      .map((f) => SEARCHABLE_FIELDS[f])
+      .filter((col): col is SQLiteColumn => col != null);
+    if (fields.length) {
+      const orExpr = or(...fields.map((col) => like(col, term)));
+      if (orExpr) conds.push(orExpr);
+    } else if (requested.length) {
+      // All requested fields were non-whitelisted: return no rows (never
+      // interpolate unknown names into SQL).
+      conds.push(sql`0`);
+    }
   }
   if (params.status) conds.push(eq(devices.status, params.status));
   if (params.location) conds.push(eq(devices.location, params.location));
