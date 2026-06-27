@@ -47,7 +47,7 @@ export function buildApp(cfg: AppConfig, db: Db): Hono {
   // Public, API-token-authed loan endpoint. Registered BEFORE the session guard
   // so service callers (no browser session) can reach it; it enforces its own
   // Bearer/X-API-Key token check via verifyApiToken.
-  app.route('/api', loanApiRoutes(db));
+  app.route('/api', loanApiRoutes(db, cfg));
 
   // All remaining /api routes require an authenticated session.
   app.use('/api/*', requireAuth(cfg));
