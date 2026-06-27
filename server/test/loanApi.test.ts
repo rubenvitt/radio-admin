@@ -33,7 +33,11 @@ describe('public loan API', () => {
   it('200 + only loanable devices with a valid Bearer token; stamps lastUsedAt', async () => {
     const { db } = makeTestDb();
     const app = buildTestApp(db);
-    createDevice(db, { issi: '100', rufname: 'Leihgerät', opta: 'O-1', loanable: true }, null);
+    const dev = createDevice(
+      db,
+      { issi: '100', rufname: 'Leihgerät', opta: 'O-1', serialNumber: 'SN-1', loanable: true },
+      null,
+    );
     createDevice(db, { issi: '200', rufname: 'Nicht leihbar', loanable: false }, null);
     createDevice(db, { issi: '300', rufname: 'Unbekannt', loanable: null }, null);
     const { record, secret } = createApiToken(db, 'svc', null);
@@ -45,11 +49,15 @@ describe('public loan API', () => {
     expect(body[0]?.issi).toBe('100');
     expect(body[0]?.opta).toBe('O-1');
     expect(body[0]?.rufname).toBe('Leihgerät');
+    // Stable immutable id (cuid2) + serialNumber are exposed so consumers
+    // (radio-inventar) can key loans on the id and surface the serial number.
+    expect(body[0]?.id).toBe(dev.id);
+    expect(body[0]?.serialNumber).toBe('SN-1');
     // PUBLIC subset only — no internal/audit fields leak.
     expect(Object.keys(body[0] ?? {}).sort()).toEqual(
-      ['bedieneinheit', 'deviceType', 'funktion', 'hersteller', 'issi', 'location', 'opta', 'rufname', 'status'].sort(),
+      ['bedieneinheit', 'deviceType', 'funktion', 'hersteller', 'id', 'issi', 'location', 'opta', 'rufname', 'serialNumber', 'status'].sort(),
     );
-    for (const k of ['id', 'createdAt', 'updatedBy', 'softwareVersion', 'serialNumber', 'loanable', 'notes']) {
+    for (const k of ['createdAt', 'updatedBy', 'softwareVersion', 'loanable', 'notes']) {
       expect(body[0]).not.toHaveProperty(k);
     }
 

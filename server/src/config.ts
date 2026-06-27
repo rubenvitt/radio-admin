@@ -27,6 +27,15 @@ const configSchema = z
     OIDC_REDIRECT_URI: z.string().url().optional(),
     OIDC_ADMIN_GROUP: z.string().default('admin'),
     OIDC_UPDATER_GROUP: z.string().default('personal'),
+    // Loan-API service-to-service auth: when OIDC_ISSUER and
+    // LOAN_API_EXPECTED_AUDIENCE are both set, GET /api/v1/loan-devices also
+    // accepts an OIDC bearer JWT (Pocket ID client_credentials) — validated by
+    // signature, issuer and audience. The audience is the OIDC client_id Pocket
+    // ID stamps into the token's `aud` claim for the calling service.
+    LOAN_API_EXPECTED_AUDIENCE: z.string().min(1).optional(),
+    // Optional hardening: when set, the JWT's `sub` must match exactly (Pocket ID
+    // uses `client-<client_id>` for client_credentials tokens).
+    LOAN_API_EXPECTED_SUBJECT: z.string().min(1).optional(),
     AUTH_DEV_BYPASS: boolFromString.default(false),
     DEV_USER_ROLE: z.enum(['admin', 'updater']).default('admin'),
     DEV_USER_NAME: z.string().default('Dev User'),
@@ -58,6 +67,20 @@ const configSchema = z
       if (cfg[key] === undefined) {
         ctx.addIssue({ code: z.ZodIssueCode.custom, path: [key], message: 'Required' });
       }
+    }
+    // The loan-API JWT path uses OIDC_ISSUER as its signature trust anchor (OIDC
+    // discovery → JWKS). Over plain HTTP an attacker could MITM the discovery
+    // document and inject keys, forging accepted tokens. Require HTTPS in prod.
+    if (
+      cfg.NODE_ENV === 'production' &&
+      cfg.OIDC_ISSUER &&
+      !cfg.OIDC_ISSUER.startsWith('https://')
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['OIDC_ISSUER'],
+        message: 'OIDC_ISSUER must use HTTPS in production',
+      });
     }
   })
   .transform((cfg) => ({
