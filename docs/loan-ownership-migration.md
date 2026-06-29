@@ -1,7 +1,15 @@
 # Loan-Datenhoheit: radio-inventar → radio-admin
 
-**Status:** Architektur entworfen & abgestimmt. Implementierung noch nicht begonnen.
+**Status:** **Phase 1 fertig & verifiziert** (Branch `feat/loan-ownership-migration`). Phasen 2–5 (Cutover-Auth-Reuse, Migration, radio-inventar Thin-Client, Cleanup) offen.
 **Richtung:** Option B — radio-admin wird System-of-Record für Ausleihen (Loans). Erster Schritt der Konsolidierung auf radio-admin.
+
+## Phase-1-Verifikation (Stand: umgesetzt)
+- radio-admin: **407 vitest** (server+shared+client), tsc ×3, eslint 0 Fehler, Client-Build grün. Migration `0003_kind_spot.sql` (Tabelle + 3 Indizes + hand-ergänzter Partial-Unique-Index) appliziert sauber.
+- **Boot-Smoke (echter Server, Dev-Bypass):** Migration appliziert beim Start; End-to-End Gerät→api-Token→`POST /api/v1/loans` (201, serverseitiger Snapshot) → zweite Ausleihe **409** (Partial-Index-Atomarität zur Laufzeit) → `GET /api/loans` zeigt die Ausleihe. `GET /api/v1/active-loans` ohne Token korrekt 401.
+- **radio-inventar (unverändert) bootet** weiterhin: `Nest application successfully started`, `/api/health` ok, Loan-Endpunkt liest noch lokal (Phase 4 offen).
+- Commits auf `feat/loan-ownership-migration`: `0114b9a` (Plan), `22ea125` (Tabelle/Migration/Schemas/Repo), `51f750e` (S2S-API/Session-Route/Retention), `02477cc` (Client-Übersicht). Basis = `main` nach FF-Merge des Ziel-Versions-Features (`154ccf9`).
+
+> ⚠️ **Nicht gepusht / kein PR** — lokaler Branch.
 
 Schwester-Doku (umgekehrte Richtung, bereits umgesetzt): `radio-inventar/docs/integration-radio-admin.md` (radio-inventar bezieht Geräte read-only aus radio-admin).
 
