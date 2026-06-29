@@ -93,3 +93,41 @@ export const deviceEvents = sqliteTable(
   },
   (table) => [index('device_events_device_id_idx').on(table.deviceId)],
 );
+
+/**
+ * Ausleihen (loans). radio-admin is the system of record; the radio-inventar
+ * kiosk writes through via the S2S loan API. `borrowed_at`/`returned_at` are
+ * epoch-ms; `returned_at IS NULL` means the loan is active.
+ *
+ * `device_id` is intentionally NOT a foreign key: returned loans are retained as
+ * history and must outlive a later device deletion (a cascade FK would wipe that
+ * history; a restrict FK would block deleting a device that merely has old
+ * returned loans). Historical accuracy is provided by the immutable display
+ * snapshot copied at borrow time, not by a live join.
+ *
+ * The "at most one active loan per device" invariant is enforced by a PARTIAL
+ * unique index `loans_device_active_uidx ON (device_id) WHERE returned_at IS
+ * NULL`, hand-added in the migration because drizzle-kit cannot emit partial
+ * indexes.
+ */
+export const loans = sqliteTable(
+  'loans',
+  {
+    id: text('id').primaryKey().$defaultFn(newId),
+    deviceId: text('device_id').notNull(),
+    snapshotCallSign: text('snapshot_call_sign').notNull(),
+    snapshotSerialNumber: text('snapshot_serial_number'),
+    snapshotDeviceType: text('snapshot_device_type'),
+    borrowerName: text('borrower_name').notNull(),
+    borrowedAt: integer('borrowed_at').notNull(),
+    returnedAt: integer('returned_at'),
+    returnNote: text('return_note'),
+    createdAt: integer('created_at').notNull(),
+    updatedAt: integer('updated_at').notNull(),
+  },
+  (table) => [
+    index('loans_device_id_idx').on(table.deviceId),
+    index('loans_borrowed_at_idx').on(table.borrowedAt),
+    index('loans_returned_at_idx').on(table.returnedAt),
+  ],
+);

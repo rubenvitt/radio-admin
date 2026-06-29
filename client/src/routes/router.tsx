@@ -5,6 +5,7 @@ import { DashboardPage } from '../pages/DashboardPage';
 import { DevicesPage } from '../pages/DevicesPage';
 import { ForbiddenPage } from '../pages/ForbiddenPage';
 import { ImportPage } from '../pages/ImportPage';
+import { LoansPage } from '../pages/LoansPage';
 import { LoginPage } from '../pages/LoginPage';
 import { NotFoundPage } from '../pages/NotFoundPage';
 import { SettingsPage } from '../pages/SettingsPage';
@@ -23,6 +24,7 @@ export const routes: RouteObject[] = [
       { path: '/', element: <DashboardPage /> },
       { path: '/devices', element: <DevicesPage /> },
       { path: '/devices/:id', element: <DevicesPage /> },
+      { path: '/ausleihen', element: <LoansPage /> },
       { path: '/update', element: <UpdatePage /> },
       { path: '/import', element: <ImportPage /> },
       { path: '/einstellungen', element: <SettingsPage /> },

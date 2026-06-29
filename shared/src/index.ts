@@ -37,3 +37,28 @@ export type {
   ImportRowClass,
   UpdateNoteInput,
 } from './schemas';
+
+export {
+  LOAN_FIELD_LIMITS,
+  BORROWER_SUGGESTION_LIMITS,
+  mapDeviceCondition,
+  createLoanSchema,
+  returnLoanSchema,
+  loanRecordSchema,
+  activeLoanSchema,
+  loanHistoryParamsSchema,
+  loanHistoryResponseSchema,
+  borrowerSuggestionsQuerySchema,
+  borrowerSuggestionSchema,
+} from './loan';
+export type {
+  DeviceCondition,
+  CreateLoan,
+  ReturnLoan,
+  LoanRecord,
+  ActiveLoan,
+  LoanHistoryParams,
+  LoanHistoryResponse,
+  BorrowerSuggestionsQuery,
+  BorrowerSuggestion,
+} from './loan';
