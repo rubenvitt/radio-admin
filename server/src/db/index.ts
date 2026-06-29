@@ -26,6 +26,13 @@ export function createDb(path: string): DbHandle {
   }
   const sqlite = new Database(path);
   sqlite.pragma('foreign_keys = ON');
+  // Unicode-aware lowercase for case-insensitive matching incl. umlauts (SQLite's
+  // built-in LIKE/lower only fold ASCII). Used by borrower-suggestion search to
+  // match e.g. "Öztürk" on a lowercase "özt" query. Deterministic so SQLite may
+  // optimize it.
+  sqlite.function('lower_u', { deterministic: true }, (value: unknown) =>
+    typeof value === 'string' ? value.toLowerCase() : value,
+  );
   const db = drizzle(sqlite, { schema });
   migrate(db, { migrationsFolder: MIGRATIONS_FOLDER });
   return { db, sqlite };

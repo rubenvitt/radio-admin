@@ -166,6 +166,13 @@ describe('loanRepo findBorrowerSuggestions', () => {
     createLoan(db, input({ deviceId: 'd1', borrowerName: 'Max' }));
     expect(findBorrowerSuggestions(db, '%', 10)).toEqual([]);
   });
+
+  it('matches umlaut names case-insensitively (Unicode lower_u)', () => {
+    const { db } = makeTestDb();
+    createLoan(db, input({ deviceId: 'd1', borrowerName: 'Öztürk' }));
+    expect(findBorrowerSuggestions(db, 'özt', 10).map((s) => s.name)).toEqual(['Öztürk']);
+    expect(findBorrowerSuggestions(db, 'ÖZT', 10).map((s) => s.name)).toEqual(['Öztürk']);
+  });
 });
 
 describe('loanRepo purgeExpiredLoans', () => {

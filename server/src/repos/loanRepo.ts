@@ -168,13 +168,15 @@ export function listLoans(db: Db, params: LoanHistoryParams): ListLoansResult {
 export function findBorrowerSuggestions(db: Db, q: string, limit: number): BorrowerSuggestion[] {
   const capped = Math.min(Math.max(1, Math.trunc(limit)), BORROWER_SUGGESTION_LIMITS.MAX_LIMIT);
   // Escape LIKE wildcards (and the escape char) so a literal % / _ in the query
-  // is matched literally; SQLite LIKE is case-insensitive for ASCII.
+  // is matched literally. lower_u() (Unicode lowercase, registered in createDb)
+  // on both sides makes the match case-insensitive incl. umlauts — SQLite's
+  // native LIKE only folds ASCII.
   const escaped = q.replace(/[\\%_]/g, '\\$&');
   const pattern = `%${escaped}%`;
   const rows = db
     .select({ name: loans.borrowerName, lastUsed: sql<number>`max(${loans.borrowedAt})` })
     .from(loans)
-    .where(sql`${loans.borrowerName} LIKE ${pattern} ESCAPE '\\'`)
+    .where(sql`lower_u(${loans.borrowerName}) LIKE lower_u(${pattern}) ESCAPE '\\'`)
     .groupBy(loans.borrowerName)
     .orderBy(sql`max(${loans.borrowedAt}) desc`)
     .limit(capped)

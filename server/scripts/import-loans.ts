@@ -22,9 +22,15 @@
  * devDependency added for this script.
  */
 import Database from 'better-sqlite3';
-import { Client } from 'pg';
+import { Client, types } from 'pg';
 
 const RETENTION_MONTHS = 2;
+
+// Prisma stores the Loan timestamps as TIMESTAMP(3) WITHOUT TIME ZONE in UTC
+// wall-clock, but node-postgres parses OID 1114 in the operator's LOCAL time by
+// default — which would shift every migrated timestamp by the local offset.
+// Force UTC interpretation so the imported epoch-ms values are correct.
+types.setTypeParser(1114, (v: string) => new Date(`${v.replace(' ', 'T')}Z`));
 
 interface PgLoan {
   id: string;
@@ -73,6 +79,17 @@ async function main(): Promise<void> {
 
   const db = new Database(sqlitePath);
   db.pragma('foreign_keys = ON');
+
+  // Preflight: a populated target usually means the import already ran (or
+  // radio-admin has been serving writes). ON CONFLICT(id) keeps existing rows,
+  // but surface it so the operator can confirm this is intended.
+  const preexisting = db.prepare('SELECT COUNT(*) AS c FROM loans').get() as { c: number };
+  if (preexisting.c > 0) {
+    console.warn(
+      `[import-loans] WARNING: target loans table already has ${preexisting.c} row(s); existing ids are kept (ON CONFLICT DO NOTHING).`,
+    );
+  }
+
   const insert = db.prepare(
     `INSERT INTO loans (id, device_id, snapshot_call_sign, snapshot_serial_number,
         snapshot_device_type, borrower_name, borrowed_at, returned_at, return_note,
