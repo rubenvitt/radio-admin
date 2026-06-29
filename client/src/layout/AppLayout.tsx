@@ -1,6 +1,7 @@
 import { Button, Drawer, Grid, Layout, Menu, Tooltip, Typography, theme } from 'antd';
 import { useState, type ReactNode } from 'react';
 import {
+  FiClipboard,
   FiGrid,
   FiLogOut,
   FiMenu,
@@ -29,6 +30,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   { key: '/', label: 'Dashboard', icon: <FiGrid /> },
   { key: '/devices', label: 'Geräte', icon: <FiRadio /> },
+  { key: '/ausleihen', label: 'Ausleihen', icon: <FiClipboard /> },
   { key: '/update', label: 'Update-Modus', icon: <FiRefreshCw /> },
   { key: '/import', label: 'Import', icon: <FiUpload /> },
   { key: '/einstellungen', label: 'Einstellungen', icon: <FiSettings />, adminOnly: true },
