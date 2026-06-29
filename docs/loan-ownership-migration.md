@@ -1,17 +1,35 @@
 # Loan-Datenhoheit: radio-inventar → radio-admin
 
-**Status:** **Phase 1 fertig & verifiziert** (Branch `feat/loan-ownership-migration`). Phasen 2–5 (Cutover-Auth-Reuse, Migration, radio-inventar Thin-Client, Cleanup) offen.
+**Status:** **Code-vollständig (Phasen 1–5) & verifiziert** auf lokalen Branches — radio-admin `feat/loan-ownership-migration`, radio-inventar `feat/loan-thin-client`. **Nicht gepusht / kein PR.** Der eigentliche Prod-**Cutover** (Migration + Deploy in der richtigen Reihenfolge) ist eine operative Aufgabe — siehe Runbook unten.
 **Richtung:** Option B — radio-admin wird System-of-Record für Ausleihen (Loans). Erster Schritt der Konsolidierung auf radio-admin.
 
-## Phase-1-Verifikation (Stand: umgesetzt)
-- radio-admin: **407 vitest** (server+shared+client), tsc ×3, eslint 0 Fehler, Client-Build grün. Migration `0003_kind_spot.sql` (Tabelle + 3 Indizes + hand-ergänzter Partial-Unique-Index) appliziert sauber.
-- **Boot-Smoke (echter Server, Dev-Bypass):** Migration appliziert beim Start; End-to-End Gerät→api-Token→`POST /api/v1/loans` (201, serverseitiger Snapshot) → zweite Ausleihe **409** (Partial-Index-Atomarität zur Laufzeit) → `GET /api/loans` zeigt die Ausleihe. `GET /api/v1/active-loans` ohne Token korrekt 401.
-- **radio-inventar (unverändert) bootet** weiterhin: `Nest application successfully started`, `/api/health` ok, Loan-Endpunkt liest noch lokal (Phase 4 offen).
-- Commits auf `feat/loan-ownership-migration`: `0114b9a` (Plan), `22ea125` (Tabelle/Migration/Schemas/Repo), `51f750e` (S2S-API/Session-Route/Retention), `02477cc` (Client-Übersicht). Basis = `main` nach FF-Merge des Ziel-Versions-Features (`154ccf9`).
-
-> ⚠️ **Nicht gepusht / kein PR** — lokaler Branch.
+## Verifikation (Stand: umgesetzt)
+- **radio-admin** (`feat/loan-ownership-migration`, Basis `main` nach FF-Merge des Ziel-Versions-Features `154ccf9`): **352 server/shared + 59 client vitest**, tsc ×3, eslint 0 Fehler, Client-Build grün. Migration `0003_kind_spot.sql` (Tabelle + Indizes + hand-ergänzter Partial-Unique-Index) appliziert sauber.
+- **radio-inventar** (`feat/loan-thin-client`): **541 unit jest**, tsc + Build (shared/backend/frontend) grün. Drop-Migration `20260629120000_drop_loan` via `prisma migrate deploy` sauber angewendet (nur `AdminUser` bleibt).
+- **End-to-End verdrahtet** (beide Apps lokal über den api-token-Modus gekoppelt): kompletter Kiosk-Flow durch radio-inventar schreibt korrekt nach radio-admin durch — Geräte AVAILABLE→ON_LOAN→AVAILABLE (Overlay aus radio-admin), Zeitstempel als **ISO-Strings** (ms→Date korrekt), Borrower-Autocomplete bedient, zweite Ausleihe **409** (Atomarität durchgereicht), Rückgabe mit Notiz — und `radio-admin GET /api/loans` zeigt die Ausleihe (sie liegt in radio-admin).
+- **Migrationsskript** `server/scripts/import-loans.ts` gegen echtes Postgres getestet (3 Loans inkl. Umlaut-Namen gelesen/importiert, idempotent).
+- **Adversarialer Multi-Agent-Review** (5 Dimensionen) durchgeführt; alle bestätigten Funde gefixt (kritisch: cuid2-Loan-ID-Validierung in `admin.schema`; plus 5xx→503, History-catch-Logging, env-Prod-Guard, Umlaut-Case-Folding, import-TZ-UTC).
 
 Schwester-Doku (umgekehrte Richtung, bereits umgesetzt): `radio-inventar/docs/integration-radio-admin.md` (radio-inventar bezieht Geräte read-only aus radio-admin).
+
+---
+
+## ⚠️ Cutover-Runbook (Prod) — Reihenfolge ist kritisch
+
+**Auth/Env zuerst:**
+- **radio-admin (prod):** für den client_credentials-JWT-Pfad `OIDC_ISSUER` + `LOAN_API_EXPECTED_AUDIENCE` (der von Pocket ID emittierte `aud`) setzen; alternativ minten Operatoren einen api-token in der Admin-UI.
+- **radio-inventar (prod):** `RADIO_ADMIN_URL` **+ ein Auth-Modus** sind ab Cutover **Pflicht** (env-Validierung erzwingt das in `NODE_ENV=production`): entweder `RADIO_ADMIN_API_TOKEN` (≥32 Zeichen) **oder** das client_credentials-Trio `RADIO_ADMIN_ISSUER_URL`/`CLIENT_ID`/`CLIENT_SECRET`. (`RADIO_ADMIN_*` lag in Prod bereits für die Geräte-Reads vor.)
+
+**Reihenfolge (kein Split-Brain, kein Datenverlust):**
+1. **radio-admin deployen** (`feat/loan-ownership-migration`): Migration `0003` legt die `loans`-Tabelle an; `LOAN_API_EXPECTED_AUDIENCE` gesetzt; S2S-Auth gegen einen echten client_credentials-Token verifizieren.
+2. **Kiosk einfrieren** (kurzer Wartungs-/Read-only-Fenster) — keine neuen Ausleihen.
+3. **Migration laufen** (radio-admin nicht-schreibend): aus `server/` mit `TZ=UTC` ausführen — `cd server && TZ=UTC INVENTAR_DATABASE_URL=… DATABASE_PATH=/data/data.sqlite npx tsx scripts/import-loans.ts --dry-run` (Zähler prüfen), dann ohne `--dry-run`. **Eine Stichprobe-Zeitstempel** gegen die Quelle gegenprüfen.
+4. **radio-inventar Thin-Client deployen** (`feat/loan-thin-client`): Entrypoint führt `prisma migrate deploy` aus → `drop_loan` **droppt die Postgres-`Loan`-Tabelle**. Ab hier gehen alle Schreibvorgänge an radio-admin.
+5. **Kiosk freigeben.**
+
+**Rollback:** Vor Schritt 4 sauber (altes radio-inventar redeployen, Postgres unverändert, da der Import nur eine Kopie war). **Nach** Schritt 4 ist die Postgres-`Loan`-Tabelle weg → Rollback erfordert ein Postgres-Backup (und ggf. Rück-Migration der in radio-admin neu entstandenen Ausleihen).
+
+**Akzeptierte Verhaltensänderung:** Ein radio-admin-Ausfall blockiert nach Cutover Kiosk-Borrow/Return (503) — `RadioAdminService.fetchActiveLoans` ist bewusst ungecacht (frischer Overlay nach Borrow/Return wichtiger als Ausfall-Resilienz). Geräte-Reads haben weiterhin stale-grace.
 
 ---
 
@@ -80,7 +98,7 @@ Fehler-Shape konsistent `{ error: string }`: `device_not_found` (404), `device_n
 - **D1 — Status-Exposition: dedizierter `GET /api/v1/active-loans`, NICHT `/loan-devices` erweitern.** `/loan-devices` filtert `loanable=true`; ein Loan auf einem nachträglich auf nicht-ausleihbar gesetzten Gerät würde sonst still verschwinden (Zähl-Bug im Dashboard). Der dedizierte Endpunkt ist der 1:1-Ersatz für radio-inventars `prisma.loan.findMany({returnedAt:null})`.
 - **D2 — Kein FK auf `loans.device_id`, dafür Snapshots.** Snapshots sichern die Historie-Unveränderlichkeit (Gerät umbenannt/gelöscht). FK+`RESTRICT` würde auch das Löschen von Geräten mit nur *zurückgegebenen* (noch nicht gepurgten) Loans blockieren → Reibung. Sicher ohne FK, weil der `POST`-Handler die Geräte-Existenz ohnehin via `getDeviceById` prüft. Falls die Invariante „Gerät mit aktiver Ausleihe nicht löschbar" gewünscht ist → expliziter Check im Device-Delete-Handler, nicht als FK.
 - **D3 — Retention: geplanter Purge, kein lazy-on-read.** `borrower_name` ist personenbezogen (DSGVO/DRK) → muss garantiert gelöscht werden, nicht nur „bei Gelegenheit beim Lesen". `retentionService.ts`: `purgeExpiredLoans(db, cutoffMs)` (rein, testbar) + `startRetentionSchedule(db)` (Startup-Purge + täglicher `setInterval().unref()`), aufgerufen aus `startServer()` (NICHT `buildApp` — Tests bleiben seiteneffektfrei). `HISTORY_RETENTION_MONTHS = 2`. Plus manueller Admin-Purge-Endpunkt.
-- **D4 — Migration: einmaliges Direkt-DB-Skript in `scripts/`, kein permanenter Import-Endpunkt.** Kein dauerhafter Schreib-Angriffspunkt für einen Einmal-Bedarf. Skript liest Postgres (`pg`), prüft jede `device_id` gegen radio-admin (Orphan-Report), `INSERT … ON CONFLICT(id) DO NOTHING` (idempotent, übernimmt Original-IDs, konvertiert DateTime→epoch-ms).
+- **D4 — Migration: einmaliges Direkt-DB-Skript `server/scripts/import-loans.ts` (aus `server/` ausführen, `pg` als server-devDep), kein permanenter Import-Endpunkt.** Kein dauerhafter Schreib-Angriffspunkt für einen Einmal-Bedarf. Skript liest Postgres (`pg`, mit UTC-Type-Parser für TIMESTAMP), `INSERT … ON CONFLICT(id) DO NOTHING` (idempotent, übernimmt Original-IDs, konvertiert DateTime→epoch-ms), Preflight-Warnung bei bereits gefüllter Ziel-Tabelle. **Kein** Orphan-/Device-Check nötig — `loans.device_id` hat keinen FK und die Snapshots machen Loans device-unabhängig.
 - **D5 — Invarianten am Master zentralisieren.** Der `POST /api/v1/loans`-Handler prüft `loanable` UND defekt/wartung→409, weil der Kiosk *offen* ist und der Master dem Client nicht vertrauen darf. **Konsequenz:** die `mapRadioAdminStatus`-Semantik (defekt→DEFECT, wartung→MAINTENANCE) muss nach radio-admin portiert werden (`@ra/shared` oder inline in `loanApi.ts`).
 
 ### Kollisionsfalle (kritisch)
@@ -115,7 +133,7 @@ Die bestehende Lese-Integration (radio-inventar zieht Geräte aus radio-admin) l
 Prod-Auth-Status der Lese-Integration prüfen → api-token vs. JWT für Writes festlegen.
 
 ### Phase 3 — Migration (einmalig)
-`server/src/scripts/migrate-loans.ts`: Postgres → SQLite, aktiv + ≤2 Monate, Orphan-Check, idempotent. Gegen Staging testen (`--dry-run`).
+`server/scripts/import-loans.ts`: Postgres → SQLite, aktiv + ≤2 Monate, idempotent (`ON CONFLICT(id) DO NOTHING`), UTC-Type-Parser. Aus `server/` mit `TZ=UTC` ausführen, erst `--dry-run`.
 
 ### Phase 4 — radio-inventar Thin-Client (Cutover)
 1. `packages/shared/src/schemas/radio-admin-loan.schema.ts` (+ Export).
