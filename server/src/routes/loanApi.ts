@@ -9,6 +9,7 @@ import {
   returnLoan,
   findActiveLoans,
   listLoans,
+  findBorrowerSuggestions,
   LoanConflictError,
 } from '../repos/loanRepo';
 import type { AppConfig } from '../config';
@@ -16,6 +17,7 @@ import {
   createLoanSchema,
   returnLoanSchema,
   loanHistoryParamsSchema,
+  borrowerSuggestionsQuerySchema,
   mapDeviceCondition,
   type DeviceRecord,
   type ActiveLoan,
@@ -139,6 +141,14 @@ export function loanApiRoutes(db: Db, cfg: AppConfig, resolveKey?: LoanJwtKeyRes
     const parsed = loanHistoryParamsSchema.safeParse(c.req.query());
     if (!parsed.success) return c.json({ error: 'invalid_query' }, 400);
     return c.json(listLoans(db, parsed.data));
+  });
+
+  // Borrower-name autocomplete for the radio-inventar kiosk (its old local
+  // prisma.loan.groupBy source disappears once loans move here).
+  r.get('/v1/borrowers/suggestions', auth, (c) => {
+    const parsed = borrowerSuggestionsQuerySchema.safeParse(c.req.query());
+    if (!parsed.success) return c.json({ error: 'invalid_query' }, 400);
+    return c.json(findBorrowerSuggestions(db, parsed.data.q, parsed.data.limit));
   });
 
   // Create a loan (kiosk borrow). Device existence + loanable + condition are

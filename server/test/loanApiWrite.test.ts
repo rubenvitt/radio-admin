@@ -3,7 +3,8 @@ import { makeTestDb } from '../src/db/test-utils';
 import { buildTestApp } from './helpers';
 import { createDevice } from '../src/repos/deviceRepo';
 import { createApiToken } from '../src/repos/apiTokenRepo';
-import type { LoanRecord, ActiveLoan, LoanHistoryResponse } from '@ra/shared';
+import { createLoan } from '../src/repos/loanRepo';
+import type { LoanRecord, ActiveLoan, LoanHistoryResponse, BorrowerSuggestion } from '@ra/shared';
 
 /** Build an app + a valid S2S bearer header in one step. */
 function setup() {
@@ -192,5 +193,27 @@ describe('GET /api/v1/loans/history', () => {
     const filteredBody = (await filtered.json()) as LoanHistoryResponse;
     expect(filteredBody.total).toBe(1);
     expect(filteredBody.rows[0]?.deviceId).toBe(a.id);
+  });
+});
+
+describe('GET /api/v1/borrowers/suggestions', () => {
+  it('401 without token; 400 without q; 200 suggestions with token', async () => {
+    const { db, app, auth } = setup();
+    createLoan(db, {
+      deviceId: 'd1',
+      snapshotCallSign: 'CS',
+      snapshotSerialNumber: null,
+      snapshotDeviceType: null,
+      borrowerName: 'Alina',
+    });
+
+    expect((await app.request('/api/v1/borrowers/suggestions?q=a')).status).toBe(401);
+    expect((await app.request('/api/v1/borrowers/suggestions', { headers: auth })).status).toBe(400);
+
+    const res = await app.request('/api/v1/borrowers/suggestions?q=al', { headers: auth });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as BorrowerSuggestion[];
+    expect(body[0]?.name).toBe('Alina');
+    expect(typeof body[0]?.lastUsed).toBe('number');
   });
 });

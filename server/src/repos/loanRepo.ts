@@ -1,8 +1,8 @@
-import { and, count, desc, eq, gte, isNotNull, isNull, lt, lte, type SQL } from 'drizzle-orm';
+import { and, count, desc, eq, gte, isNotNull, isNull, lt, lte, sql, type SQL } from 'drizzle-orm';
 import { loans } from '../db/schema';
 import { newId } from '../db/id';
 import type { Db } from './deviceRepo';
-import type { LoanRecord, LoanHistoryParams } from '@ra/shared';
+import { BORROWER_SUGGESTION_LIMITS, type LoanRecord, type LoanHistoryParams, type BorrowerSuggestion } from '@ra/shared';
 
 /**
  * Pure loan persistence functions `(db, …) => result`, mirroring deviceRepo.
@@ -157,6 +157,29 @@ export function listLoans(db: Db, params: LoanHistoryParams): ListLoansResult {
     .map(toLoanRecord);
 
   return { rows, total, page, pageSize };
+}
+
+/**
+ * Distinct borrower-name suggestions for the kiosk autocomplete, matched
+ * case-insensitively (substring) and ordered by most-recent borrow. `lastUsed`
+ * is the borrower's latest `borrowedAt` (epoch-ms). Mirrors radio-inventar's old
+ * `prisma.loan.groupBy(borrowerName)` semantics, incl. LIKE wildcard escaping.
+ */
+export function findBorrowerSuggestions(db: Db, q: string, limit: number): BorrowerSuggestion[] {
+  const capped = Math.min(Math.max(1, Math.trunc(limit)), BORROWER_SUGGESTION_LIMITS.MAX_LIMIT);
+  // Escape LIKE wildcards (and the escape char) so a literal % / _ in the query
+  // is matched literally; SQLite LIKE is case-insensitive for ASCII.
+  const escaped = q.replace(/[\\%_]/g, '\\$&');
+  const pattern = `%${escaped}%`;
+  const rows = db
+    .select({ name: loans.borrowerName, lastUsed: sql<number>`max(${loans.borrowedAt})` })
+    .from(loans)
+    .where(sql`${loans.borrowerName} LIKE ${pattern} ESCAPE '\\'`)
+    .groupBy(loans.borrowerName)
+    .orderBy(sql`max(${loans.borrowedAt}) desc`)
+    .limit(capped)
+    .all();
+  return rows.map((r) => ({ name: r.name, lastUsed: r.lastUsed }));
 }
 
 /**

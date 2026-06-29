@@ -8,6 +8,7 @@ import {
   getLoanById,
   findActiveLoans,
   listLoans,
+  findBorrowerSuggestions,
   purgeExpiredLoans,
   LoanConflictError,
   type CreateLoanInput,
@@ -135,6 +136,35 @@ describe('loanRepo listLoans', () => {
 
     const byRange = listLoans(db, { page: 1, pageSize: 10, from: 1_500, to: 2_500 });
     expect(byRange.rows.map((l) => l.borrowedAt)).toEqual([2_000]);
+  });
+});
+
+describe('loanRepo findBorrowerSuggestions', () => {
+  it('groups distinct borrowers (case-insensitive substring), newest first, capped', () => {
+    const { db } = makeTestDb();
+    const a = createLoan(db, input({ deviceId: 'd1', borrowerName: 'Alina' }));
+    const b = createLoan(db, input({ deviceId: 'd2', borrowerName: 'Brian' }));
+    const c = createLoan(db, input({ deviceId: 'd3', borrowerName: 'Alina' }));
+    setBorrowedAt(db, a.id, 1_000);
+    setBorrowedAt(db, b.id, 2_000);
+    setBorrowedAt(db, c.id, 3_000); // Alina's latest = 3000
+
+    // 'a' matches both; distinct names, ordered by last-used desc.
+    const both = findBorrowerSuggestions(db, 'a', 10);
+    expect(both.map((s) => s.name)).toEqual(['Alina', 'Brian']);
+    expect(both[0]?.lastUsed).toBe(3_000);
+
+    // case-insensitive + distinct
+    expect(findBorrowerSuggestions(db, 'BR', 10).map((s) => s.name)).toEqual(['Brian']);
+
+    // limit cap
+    expect(findBorrowerSuggestions(db, 'a', 1).map((s) => s.name)).toEqual(['Alina']);
+  });
+
+  it('escapes LIKE wildcards so a literal % does not match everything', () => {
+    const { db } = makeTestDb();
+    createLoan(db, input({ deviceId: 'd1', borrowerName: 'Max' }));
+    expect(findBorrowerSuggestions(db, '%', 10)).toEqual([]);
   });
 });
 

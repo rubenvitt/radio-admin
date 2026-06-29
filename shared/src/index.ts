@@ -40,6 +40,7 @@ export type {
 
 export {
   LOAN_FIELD_LIMITS,
+  BORROWER_SUGGESTION_LIMITS,
   mapDeviceCondition,
   createLoanSchema,
   returnLoanSchema,
@@ -47,6 +48,8 @@ export {
   activeLoanSchema,
   loanHistoryParamsSchema,
   loanHistoryResponseSchema,
+  borrowerSuggestionsQuerySchema,
+  borrowerSuggestionSchema,
 } from './loan';
 export type {
   DeviceCondition,
@@ -56,4 +59,6 @@ export type {
   ActiveLoan,
   LoanHistoryParams,
   LoanHistoryResponse,
+  BorrowerSuggestionsQuery,
+  BorrowerSuggestion,
 } from './loan';

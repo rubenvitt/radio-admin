@@ -106,6 +106,31 @@ export const loanHistoryResponseSchema = z.object({
   pageSize: z.number().int().positive(),
 });
 
+/** Borrower-suggestion limits (mirror radio-inventar's BORROWER_SUGGESTIONS). */
+export const BORROWER_SUGGESTION_LIMITS = Object.freeze({
+  DEFAULT_LIMIT: 10,
+  MAX_LIMIT: 50,
+} as const);
+
+/** Query params for the borrower-suggestions autocomplete endpoint. */
+export const borrowerSuggestionsQuerySchema = z.object({
+  q: z.string().trim().min(1),
+  limit: z.coerce.number().int().min(1).default(BORROWER_SUGGESTION_LIMITS.DEFAULT_LIMIT),
+});
+
+/**
+ * A borrower-name suggestion. `lastUsed` is the most recent borrow time
+ * (epoch-ms). radio-inventar's kiosk autocomplete is keyed on these; the
+ * consumer maps `lastUsed` back to a Date.
+ */
+export const borrowerSuggestionSchema = z.object({
+  name: z.string(),
+  lastUsed: z.number().int(),
+});
+
+export type BorrowerSuggestionsQuery = z.infer<typeof borrowerSuggestionsQuerySchema>;
+export type BorrowerSuggestion = z.infer<typeof borrowerSuggestionSchema>;
+
 export type CreateLoan = z.infer<typeof createLoanSchema>;
 export type ReturnLoan = z.infer<typeof returnLoanSchema>;
 export type LoanRecord = z.infer<typeof loanRecordSchema>;
