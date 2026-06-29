@@ -1,11 +1,26 @@
 import { Hono } from 'hono';
 import type { MiddlewareHandler } from 'hono';
 import type { Db } from '../repos/deviceRepo';
-import { listLoanableDevices } from '../repos/deviceRepo';
+import { listLoanableDevices, getDeviceById } from '../repos/deviceRepo';
 import { verifyApiToken } from '../repos/apiTokenRepo';
 import { verifyLoanJwt, type LoanJwtKeyResolver } from '../auth/loan-api-jwt';
+import {
+  createLoan,
+  returnLoan,
+  findActiveLoans,
+  listLoans,
+  LoanConflictError,
+} from '../repos/loanRepo';
 import type { AppConfig } from '../config';
-import type { DeviceRecord } from '@ra/shared';
+import {
+  createLoanSchema,
+  returnLoanSchema,
+  loanHistoryParamsSchema,
+  mapDeviceCondition,
+  type DeviceRecord,
+  type ActiveLoan,
+  type LoanRecord,
+} from '@ra/shared';
 
 /**
  * PUBLIC loan-device view: a deliberate subset, no audit/software fields.
@@ -77,18 +92,102 @@ function requireLoanApiAuth(
   };
 }
 
+/** Active-loan projection for the S2S consumer (radio-inventar device overlay + dashboard). */
+function toActiveLoan(loan: LoanRecord): ActiveLoan {
+  return {
+    id: loan.id,
+    deviceId: loan.deviceId,
+    snapshotCallSign: loan.snapshotCallSign,
+    snapshotDeviceType: loan.snapshotDeviceType,
+    borrowerName: loan.borrowerName,
+    borrowedAt: loan.borrowedAt,
+  };
+}
+
 /**
  * Public, token-authed loan API. MOUNTED BEFORE the `/api/*` session guard in
  * buildApp, so it is reachable without a browser session — service callers
  * authenticate with an API token or an OIDC client_credentials JWT instead.
+ *
+ * Besides the read-only loanable device list, it owns the loan write surface
+ * (create / return) that the radio-inventar kiosk calls through to, plus the
+ * active-loans and history reads radio-inventar uses for status + history.
  *
  * `resolveKey` is an optional JWKS resolver seam for tests; production uses the
  * built-in remote resolver (OIDC discovery + JWKS) in loan-api-jwt.
  */
 export function loanApiRoutes(db: Db, cfg: AppConfig, resolveKey?: LoanJwtKeyResolver) {
   const r = new Hono();
-  r.get('/v1/loan-devices', requireLoanApiAuth(db, cfg, resolveKey), (c) => {
+  const auth = requireLoanApiAuth(db, cfg, resolveKey);
+
+  // Loanable device list (read-only, unchanged).
+  r.get('/v1/loan-devices', auth, (c) => {
     return c.json(listLoanableDevices(db).map(toLoanDevice));
   });
+
+  // Active loans — the dedicated status source for radio-inventar's device
+  // overlay + dashboard. Deliberately NOT folded into /loan-devices, which
+  // filters loanable=true and would hide a loan on a since-un-loanabled device.
+  r.get('/v1/active-loans', auth, (c) => {
+    return c.json(findActiveLoans(db).map(toActiveLoan));
+  });
+
+  // Paginated loan history (active + returned), for radio-inventar's admin
+  // history view after cutover. Retention is a scheduled job, so reads do not
+  // purge.
+  r.get('/v1/loans/history', auth, (c) => {
+    const parsed = loanHistoryParamsSchema.safeParse(c.req.query());
+    if (!parsed.success) return c.json({ error: 'invalid_query' }, 400);
+    return c.json(listLoans(db, parsed.data));
+  });
+
+  // Create a loan (kiosk borrow). Device existence + loanable + condition are
+  // gated HERE at the master: the kiosk is open, so the caller is not trusted to
+  // enforce these. The partial unique index is the atomic guard against a
+  // concurrent borrow (no SELECT-then-insert race).
+  r.post('/v1/loans', auth, async (c) => {
+    const body = await c.req.json().catch(() => null);
+    const parsed = createLoanSchema.safeParse(body);
+    if (!parsed.success) return c.json({ error: 'invalid_body' }, 400);
+    const { deviceId, borrowerName } = parsed.data;
+
+    const device = getDeviceById(db, deviceId);
+    if (!device) return c.json({ error: 'device_not_found' }, 404);
+    if (!device.loanable) return c.json({ error: 'device_not_loanable' }, 409);
+    const condition = mapDeviceCondition(device.status);
+    if (condition !== 'AVAILABLE') return c.json({ error: 'device_not_available', condition }, 409);
+
+    try {
+      const loan = createLoan(db, {
+        deviceId,
+        snapshotCallSign: device.rufname ?? device.issi,
+        snapshotSerialNumber: device.serialNumber,
+        snapshotDeviceType: device.deviceType,
+        borrowerName,
+      });
+      return c.json(loan, 201);
+    } catch (err: unknown) {
+      if (err instanceof LoanConflictError) return c.json({ error: 'device_already_on_loan' }, 409);
+      throw err;
+    }
+  });
+
+  // Return a loan (kiosk return). Atomic: a missing/already-returned loan maps to
+  // 404 / 409 via the repo's distinction.
+  r.patch('/v1/loans/:loanId', auth, async (c) => {
+    const loanId = c.req.param('loanId');
+    const body = await c.req.json().catch(() => ({}));
+    const parsed = returnLoanSchema.safeParse(body);
+    if (!parsed.success) return c.json({ error: 'invalid_body' }, 400);
+
+    const result = returnLoan(db, loanId, parsed.data.returnNote);
+    if (!result.updated) {
+      return result.alreadyReturned
+        ? c.json({ error: 'loan_already_returned' }, 409)
+        : c.json({ error: 'loan_not_found' }, 404);
+    }
+    return c.json(result.updated, 200);
+  });
+
   return r;
 }

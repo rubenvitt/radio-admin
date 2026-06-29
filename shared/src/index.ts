@@ -40,6 +40,7 @@ export type {
 
 export {
   LOAN_FIELD_LIMITS,
+  mapDeviceCondition,
   createLoanSchema,
   returnLoanSchema,
   loanRecordSchema,
@@ -48,6 +49,7 @@ export {
   loanHistoryResponseSchema,
 } from './loan';
 export type {
+  DeviceCondition,
   CreateLoan,
   ReturnLoan,
   LoanRecord,

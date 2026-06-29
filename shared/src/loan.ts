@@ -6,6 +6,27 @@ export const LOAN_FIELD_LIMITS = Object.freeze({
   RETURN_NOTE_MAX: 500,
 } as const);
 
+export type DeviceCondition = 'AVAILABLE' | 'DEFECT' | 'MAINTENANCE';
+
+/**
+ * Map radio-admin's free-text device `status` to a loan condition. Mirrors
+ * radio-inventar's `mapRadioAdminStatus` minus the ON_LOAN overlay (loan state
+ * is now derived from the loans table, not the status field): `defekt` → DEFECT,
+ * `wartung` → MAINTENANCE (case-insensitive after trimming); anything else —
+ * including null, "Einsatzbereit" or a stale "Ausgeliehen" — is AVAILABLE.
+ * A non-AVAILABLE device cannot be borrowed.
+ */
+export function mapDeviceCondition(status: string | null): DeviceCondition {
+  switch (status?.trim().toLowerCase()) {
+    case 'defekt':
+      return 'DEFECT';
+    case 'wartung':
+      return 'MAINTENANCE';
+    default:
+      return 'AVAILABLE';
+  }
+}
+
 /**
  * Create-loan payload (radio-inventar kiosk → radio-admin S2S). The device
  * snapshot (call sign / serial / type) is taken server-side from the device

@@ -5,6 +5,7 @@ import { pathToFileURL } from 'node:url';
 import { loadConfig } from './config';
 import { getDb } from './db/index';
 import { buildApp } from './app';
+import { startRetentionSchedule } from './services/retentionService';
 
 export { buildApp } from './app';
 
@@ -28,6 +29,10 @@ export function startServer() {
   const cfg = loadConfig();
   const { db } = getDb();
   const app = buildApp(cfg, db);
+
+  // Process-lifetime retention purge (DSGVO): immediate + daily. Kept out of
+  // buildApp so unit tests that build the app stay side-effect-free.
+  startRetentionSchedule(db);
 
   const server = serve({ fetch: app.fetch, port: cfg.PORT }, (info) => {
     console.log(`[server] radio-admin listening on http://0.0.0.0:${info.port}`);

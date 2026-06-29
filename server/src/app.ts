@@ -11,6 +11,7 @@ import { softwareVersionRoutes } from './routes/softwareVersions';
 import { importRoutes } from './routes/import';
 import { tokenRoutes } from './routes/tokens';
 import { loanApiRoutes } from './routes/loanApi';
+import { loansRoutes } from './routes/loans';
 import { exportRoutes } from './routes/export';
 import { mountStatic } from './static';
 
@@ -62,6 +63,9 @@ export function buildApp(cfg: AppConfig, db: Db): Hono {
   app.route('/api', importRoutes(db));
   // Admin-only API-token management (each route also requires the admin role).
   app.route('/api', tokenRoutes(db));
+  // Session-guarded loan overview for the SPA (writes go through the public
+  // loan API; this is read-only + an admin retention purge).
+  app.route('/api', loansRoutes(db));
 
   // Serve the built SPA + static assets AFTER all /api routes are registered, so
   // the catch-all fallback can never shadow an API endpoint. Disabled when
