@@ -16,7 +16,7 @@ export function UpdateMode() {
   // Preselect the current reference version once it loads.
   useEffect(() => {
     if (!target) {
-      const ref = versions.data?.find((v) => v.reference)?.value;
+      const ref = versions.data?.find((v) => v.isTarget)?.value;
       if (ref) setTarget(ref);
     }
   }, [versions.data, target]);
@@ -42,12 +42,12 @@ export function UpdateMode() {
       <div>
         <Typography.Text strong>Zielversion</Typography.Text>
         <Combobox
-          allowCreate
+          allowCreate={false}
           options={(versions.data ?? []).map((v) => v.value)}
           loading={versions.isLoading}
           value={target}
           onChange={(v) => setTarget(v ?? '')}
-          placeholder="Zielversion wählen oder anlegen"
+          placeholder="Zielversion wählen"
         />
       </div>
       {total > 0 && (

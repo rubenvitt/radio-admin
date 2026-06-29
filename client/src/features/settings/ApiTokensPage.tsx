@@ -22,11 +22,7 @@ import {
   type ApiToken,
   type CreatedApiToken,
 } from '../../hooks/useApiTokens';
-
-function formatTimestamp(ms: number | null | undefined): string {
-  if (!ms) return '—';
-  return new Date(ms).toLocaleString('de-DE');
-}
+import { formatTimestamp } from '../../utils/format';
 
 /** Best-effort clipboard copy with a user-visible confirmation. */
 async function copyToClipboard(text: string): Promise<void> {

@@ -2,12 +2,12 @@ import { Button, Drawer, Grid, Layout, Menu, Tooltip, Typography, theme } from '
 import { useState, type ReactNode } from 'react';
 import {
   FiGrid,
-  FiKey,
   FiLogOut,
   FiMenu,
   FiMoon,
   FiRadio,
   FiRefreshCw,
+  FiSettings,
   FiSun,
   FiUpload,
 } from 'react-icons/fi';
@@ -31,7 +31,7 @@ const navItems: NavItem[] = [
   { key: '/devices', label: 'Geräte', icon: <FiRadio /> },
   { key: '/update', label: 'Update-Modus', icon: <FiRefreshCw /> },
   { key: '/import', label: 'Import', icon: <FiUpload /> },
-  { key: '/einstellungen', label: 'API-Zugriff', icon: <FiKey />, adminOnly: true },
+  { key: '/einstellungen', label: 'Einstellungen', icon: <FiSettings />, adminOnly: true },
 ];
 
 async function logout() {

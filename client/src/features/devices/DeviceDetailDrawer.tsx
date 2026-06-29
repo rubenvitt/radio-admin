@@ -19,14 +19,10 @@ import { useDevice } from '../../hooks/useDevice';
 import { useDeleteDevice } from '../../hooks/useDeleteDevice';
 import { DeviceEditForm } from './DeviceEditForm';
 import { UpdateNotePanel } from './UpdateNotePanel';
+import { formatTimestamp } from '../../utils/format';
 
 export interface DeviceDetailDrawerProps {
   deviceId: string;
-}
-
-function formatTimestamp(ms: number | null | undefined): string {
-  if (!ms) return '—';
-  return new Date(ms).toLocaleString('de-DE');
 }
 
 /** hiorgId read view: a link when it looks like a URL, plain text otherwise. */
