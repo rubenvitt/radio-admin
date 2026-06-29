@@ -1,12 +1,19 @@
 import { describe, it, expect } from 'vitest';
 import { makeTestDb } from '../src/db/test-utils';
 import { createDevice, listDevices } from '../src/repos/deviceRepo';
-import { insertSoftwareVersionIfNew } from '../src/repos/softwareVersionRepo';
+import {
+  insertSoftwareVersionIfNew,
+  listSoftwareVersions,
+  setTargetVersion,
+} from '../src/repos/softwareVersionRepo';
 import type { Db } from '../src/repos/deviceRepo';
 
 function seed(db: Db) {
   insertSoftwareVersionIfNew(db, 'FW 1.0', null, 1000);
   insertSoftwareVersionIfNew(db, 'FW 2.0', null, 2000);
+  // FW 2.0 is the explicit target → devices on it count as 'aktuell'.
+  const target = listSoftwareVersions(db).find((v) => v.value === 'FW 2.0');
+  if (target) setTargetVersion(db, target.id);
   createDevice(
     db,
     {

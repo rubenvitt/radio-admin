@@ -21,7 +21,7 @@ Der `rtk`-Proxy kann Exit-Codes verschlucken (zeigt „EXIT 0" bei Fehler). Gate
 
 - **TDD**, Commit pro logischer Änderung; Commit-Messages enden mit `Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>`.
 - **Rollen:** admin (alles) / updater (darf nur `UPDATER_EDITABLE_FIELDS` = softwareVersion/lastUpdatedAt/status setzen, serverseitig via `filterEditableFields` erzwungen). Master-Felder (issi, loanable, …) sind admin-only.
-- **Update-Stand** ist berechnet (nicht gespeichert): `aktuell`, wenn die Geräteversion die zuletzt angelegte, einem Gerät zugewiesene Softwareversion ist.
+- **Update-Stand** ist berechnet (nicht gespeichert): `aktuell`, wenn die Geräteversion der explizit als Ziel markierten Softwareversion entspricht (`isTarget`-Flag in `software_versions`, gelesen via `getReferenceVersion`). Der Admin setzt das Ziel über die Versionsverwaltung (`POST /api/software-versions/:id/target`) — **keine** automatische Ableitung mehr aus `createdAt`. Neue/auto-erfasste Versionen werden nie automatisch Ziel; `sortOrder` ist nur Anzeige-Reihenfolge.
 - **Client↔Server-Contracts:** Server-Listen liefern teils Envelopes (`/api/suggestions` → `{values:[]}`), nicht nackte Arrays — neue Endpunkte gegen die echte Route-JSON prüfen, nicht annehmen.
 - **Auth:** BFF (PocketID OIDC, httpOnly-Session-JWT). Lokal `AUTH_DEV_BYPASS=true` überspringt Login. Audit-Felder speichern `user.sub`; Namen werden über die `users`-Tabelle aufgelöst.
 

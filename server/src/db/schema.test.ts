@@ -43,7 +43,7 @@ describe('schema: devices', () => {
 describe('schema: softwareVersions', () => {
   it('has exactly the contracted columns', () => {
     expect(columnNames(softwareVersions).sort()).toEqual(
-      ['id', 'value', 'createdAt', 'createdBy'].sort(),
+      ['id', 'value', 'createdAt', 'createdBy', 'sortOrder', 'isTarget'].sort(),
     );
   });
 });

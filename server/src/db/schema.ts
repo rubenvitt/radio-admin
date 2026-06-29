@@ -41,6 +41,15 @@ export const softwareVersions = sqliteTable('software_versions', {
   value: text('value').notNull().unique(),
   createdAt: integer('created_at').notNull(),
   createdBy: text('created_by'),
+  // Manual display order (admin-sortable). Higher = shown further up. The
+  // "current" target version is NOT derived from this — it is the explicit
+  // isTarget flag below — so a newly-seen version landing on top never
+  // auto-becomes the update target.
+  sortOrder: integer('sort_order').notNull().default(0),
+  // Exactly one version is the update target (the value that makes a device
+  // 'aktuell'). Replaces the former "newest-createdAt-assigned-to-a-device"
+  // heuristic; the admin sets it explicitly.
+  isTarget: integer('is_target', { mode: 'boolean' }).notNull().default(false),
 });
 
 export const apiTokens = sqliteTable('api_tokens', {

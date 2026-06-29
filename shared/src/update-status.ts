@@ -2,10 +2,10 @@ export type UpdateStatus = 'aktuell' | 'veraltet' | 'unbekannt';
 
 export function computeUpdateStatus(
   device: { softwareVersion: string | null },
-  referenceVersion: string | null,
+  targetVersion: string | null,
 ): UpdateStatus {
   if (device.softwareVersion === null) return 'unbekannt';
-  if (referenceVersion !== null && device.softwareVersion === referenceVersion) {
+  if (targetVersion !== null && device.softwareVersion === targetVersion) {
     return 'aktuell';
   }
   return 'veraltet';

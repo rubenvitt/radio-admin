@@ -3,7 +3,7 @@ import type { SQLiteColumn } from 'drizzle-orm/sqlite-core';
 import type { DbHandle } from '../db/index';
 import { newId } from '../db/id';
 import { devices, deviceEvents } from '../db/schema';
-import { getReferenceVersion } from './softwareVersionRepo';
+import { getTargetVersion } from './softwareVersionRepo';
 import type { DeviceRecord, DeviceCreate, UpdateStatus, FieldDiff } from '@ra/shared';
 
 /** The drizzle database type shared by production (`getDb().db`) and tests (`makeTestDb().db`). */
@@ -142,14 +142,14 @@ function csv(v?: string): string[] {
 }
 
 export function listDevices(db: Db, params: ListParams): ListResult {
-  const ref = getReferenceVersion(db); // string | null
-  // SQL expression mirroring computeUpdateStatus(device, ref):
-  //   null swVersion -> 'unbekannt'; equals ref -> 'aktuell'; else 'veraltet'.
-  // When ref is null the 'aktuell' branch can never match, so non-null versions
-  // fall through to 'veraltet' — matching the shared fn exactly.
+  const target = getTargetVersion(db); // string | null
+  // SQL expression mirroring computeUpdateStatus(device, target):
+  //   null swVersion -> 'unbekannt'; equals target -> 'aktuell'; else 'veraltet'.
+  // When target is null the 'aktuell' branch can never match, so non-null
+  // versions fall through to 'veraltet' — matching the shared fn exactly.
   const statusExpr = sql<UpdateStatus>`CASE
     WHEN ${devices.softwareVersion} IS NULL THEN 'unbekannt'
-    WHEN ${ref ?? null} IS NOT NULL AND ${devices.softwareVersion} = ${ref ?? null} THEN 'aktuell'
+    WHEN ${target ?? null} IS NOT NULL AND ${devices.softwareVersion} = ${target ?? null} THEN 'aktuell'
     ELSE 'veraltet' END`;
 
   const conds: SQL[] = [];

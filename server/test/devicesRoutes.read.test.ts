@@ -2,13 +2,19 @@ import { describe, it, expect } from 'vitest';
 import { makeTestDb } from '../src/db/test-utils';
 import { buildTestApp, authCookie, adminUser } from './helpers';
 import { createDevice } from '../src/repos/deviceRepo';
-import { insertSoftwareVersionIfNew } from '../src/repos/softwareVersionRepo';
+import {
+  insertSoftwareVersionIfNew,
+  listSoftwareVersions,
+  setTargetVersion,
+} from '../src/repos/softwareVersionRepo';
 import { upsertUser } from '../src/repos/userRepo';
 
 describe('GET /api/devices(/:id)', () => {
   it('lists devices with updateStatus and reads one by id', async () => {
     const { db } = makeTestDb();
     insertSoftwareVersionIfNew(db, 'FW 2.0', null, 2000);
+    const target = listSoftwareVersions(db).find((v) => v.value === 'FW 2.0');
+    if (target) setTargetVersion(db, target.id); // FW 2.0 is the target → 'aktuell'
     const d = createDevice(db, { issi: '500', rufname: 'Delta', softwareVersion: 'FW 2.0' }, null);
     const app = buildTestApp(db);
     const cookie = await authCookie(adminUser);

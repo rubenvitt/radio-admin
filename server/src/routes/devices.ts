@@ -23,7 +23,7 @@ import {
   getDeviceEvents,
 } from '../repos/deviceRepo';
 import {
-  getReferenceVersion,
+  getTargetVersion,
   insertSoftwareVersionIfNew,
 } from '../repos/softwareVersionRepo';
 import { resolveUserNames } from '../repos/userRepo';
@@ -82,8 +82,8 @@ export function deviceRoutes(db: Db) {
   r.get('/devices/:id', (c) => {
     const device = getDeviceById(db, c.req.param('id'));
     if (!device) return c.json({ error: 'not_found' }, 404);
-    const ref = getReferenceVersion(db);
-    const updateStatus = computeUpdateStatus(device, ref);
+    const target = getTargetVersion(db);
+    const updateStatus = computeUpdateStatus(device, target);
     // Additively resolve the audit subs to display names; keep the raw
     // createdBy/updatedBy and fall back to the raw sub when unknown.
     const subs = [device.createdBy, device.updatedBy].filter((s): s is string => s != null);
@@ -137,8 +137,8 @@ export function deviceRoutes(db: Db) {
     const diffs = diffDevice(existing, allowed);
 
     if (diffs.length === 0) {
-      const ref0 = getReferenceVersion(db);
-      return c.json({ ...existing, updateStatus: computeUpdateStatus(existing, ref0) });
+      const target0 = getTargetVersion(db);
+      return c.json({ ...existing, updateStatus: computeUpdateStatus(existing, target0) });
     }
 
     // Atomic: software-version registration + device update + events succeed or
@@ -152,8 +152,8 @@ export function deviceRoutes(db: Db) {
       return u;
     });
 
-    const ref = getReferenceVersion(db);
-    return c.json({ ...updated, updateStatus: computeUpdateStatus(updated, ref) });
+    const target = getTargetVersion(db);
+    return c.json({ ...updated, updateStatus: computeUpdateStatus(updated, target) });
   });
 
   // Append-only Update-Anmerkung. Open to any authenticated role (admin &
@@ -181,8 +181,8 @@ export function deviceRoutes(db: Db) {
       return u;
     });
 
-    const ref = getReferenceVersion(db);
-    return c.json({ ...updated, updateStatus: computeUpdateStatus(updated, ref) });
+    const target = getTargetVersion(db);
+    return c.json({ ...updated, updateStatus: computeUpdateStatus(updated, target) });
   });
 
   r.delete('/devices/:id', requireRole('admin'), (c) => {
